@@ -1,11 +1,11 @@
-package dt.jdictionary.sqlite.raw;
+package dt.jdictionary.dumpdb.line;
 
-public class RawSubstringRow 
+public class SubstringLine 
 {
 	final String substring;
 	final String fullString;
 
-	public RawSubstringRow(String substring, String fullString) 
+	public SubstringLine(String substring, String fullString) 
 	{
 		this.substring = substring;
 		this.fullString = fullString;
@@ -41,7 +41,7 @@ public class RawSubstringRow
 			return false;
 		}
 
-		final RawSubstringRow casted = (RawSubstringRow)obj;
+		final SubstringLine casted = (SubstringLine)obj;
 		return
 			casted.substring.equals(this.substring) &&
 			casted.fullString.equals(this.fullString);

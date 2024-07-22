@@ -1,10 +1,10 @@
-package dt.jdictionary.sqlite.dbservice;
+package dt.jdictionary.util;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import dt.jdictionary.sqlite.raw.PastHit;
+import dt.jdictionary.dumpdb.line.PastHit;
 
 public class PastHitUtils
 {

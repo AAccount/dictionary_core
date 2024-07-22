@@ -1,20 +1,20 @@
-package dt.jdictionary.sqlite.dbservice.alternative;
+package dt.jdictionary.dbservice.alternative;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import dt.jdictionary.SimpleLookup;
-import dt.jdictionary.sqlite.dbservice.DbServiceUtils;
-import dt.jdictionary.sqlite.raw.IDbRepo;
+import dt.jdictionary.ChineseSummaryLookup;
+import dt.jdictionary.dbservice.DbServiceUtils;
+import dt.jdictionary.dumpdb.DumpDBRepo;
 import dt.util.ChineseText;
 
 public class DeinterlaceSearch implements AlternateSearch
 {	
 	private final String zh;
-	private final IDbRepo db;
+	private final DumpDBRepo db;
 	
-	public DeinterlaceSearch(String zh, IDbRepo db)
+	public DeinterlaceSearch(String zh, DumpDBRepo db)
 	{
 		this.zh = zh;
 		this.db = db;
@@ -25,7 +25,7 @@ public class DeinterlaceSearch implements AlternateSearch
 	 * @throws SQLException 
 	 */
 	@Override
-	public List<SimpleLookup> trySearch() throws Exception
+	public List<ChineseSummaryLookup> trySearch()
 	{
 		final int MIN_DEINTERLACE = 3;
 		final int MAX_DEINTERLACE = 4;

@@ -1,27 +1,26 @@
-package dt.jdictionary.sqlite.dbservice.alternative;
+package dt.jdictionary.dbservice.alternative;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import dt.jdictionary.SimpleLookup;
-import dt.jdictionary.sqlite.dbservice.DbServiceUtils;
-import dt.jdictionary.sqlite.raw.IDbRepo;
+import dt.jdictionary.ChineseSummaryLookup;
+import dt.jdictionary.dbservice.DbServiceUtils;
+import dt.jdictionary.dumpdb.DumpDBRepo;
 
 public class SubstringOfSearch implements AlternateSearch
 {
 	private final String zh;
-	private final IDbRepo db;
+	private final DumpDBRepo db;
 	
-	public SubstringOfSearch(String zh, IDbRepo db)
+	public SubstringOfSearch(String zh, DumpDBRepo db)
 	{
 		this.zh = zh;
 		this.db = db;
 	}
 
 	@Override
- 	public List<SimpleLookup> trySearch() throws Exception
+ 	public List<ChineseSummaryLookup> trySearch()
 	{
 		final List<String> possibleMatches = this.db.trySubstring(this.zh);
 		if(possibleMatches.size() == 0)

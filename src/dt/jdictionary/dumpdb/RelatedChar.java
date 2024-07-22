@@ -1,4 +1,4 @@
-package dt.jdictionary.sqlite.raw;
+package dt.jdictionary.dumpdb;
 
 public enum RelatedChar
 {

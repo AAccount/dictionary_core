@@ -1,6 +1,6 @@
-package dt.jdictionary.sqlite.dbservice;
+package dt.jdictionary.dbservice;
 
-import java.sql.SQLException;
+import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,29 +17,32 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import dt.jdictionary.ChineseDefinitionLookup;
+import dt.jdictionary.ChineseSummaryLookup;
+import dt.jdictionary.ExceptionPile;
 import dt.jdictionary.ExhaustiveChineseLookup;
-import dt.jdictionary.MeasureWords;
-import dt.jdictionary.SimpleLookup;
-import dt.jdictionary.sqlite.dbservice.alternative.AlternateSearch;
-import dt.jdictionary.sqlite.dbservice.alternative.DeinterlaceSearch;
-import dt.jdictionary.sqlite.dbservice.alternative.SubstringOfSearch;
-import dt.jdictionary.sqlite.dbservice.alternative.SameBackSearch;
-import dt.jdictionary.sqlite.dbservice.alternative.SameFrontSearch;
-import dt.jdictionary.sqlite.dbservice.alternative.SubstringSearch;
-import dt.jdictionary.sqlite.dbservice.alternative.TypoSearch;
-import dt.jdictionary.sqlite.raw.IDbRepo;
-import dt.jdictionary.sqlite.raw.RawDictionaryRow;
+import dt.jdictionary.MeasureSummary;
+import dt.jdictionary.dbservice.alternative.AlternateSearch;
+import dt.jdictionary.dbservice.alternative.DeinterlaceSearch;
+import dt.jdictionary.dbservice.alternative.SameBackSearch;
+import dt.jdictionary.dbservice.alternative.SameFrontSearch;
+import dt.jdictionary.dbservice.alternative.SubstringOfSearch;
+import dt.jdictionary.dbservice.alternative.SubstringSearch;
+import dt.jdictionary.dbservice.alternative.TypoSearch;
+import dt.jdictionary.dumpdb.DumpDBRepo;
+import dt.jdictionary.dumpdb.line.DictionaryLine;
 import dt.jdictionary.util.GenerateCombinations;
+import dt.jdictionary.util.PastHitUtils;
 import dt.util.ChineseText;
 import dt.util.Debug;
 import dt.util.J9Shorthand;
 
 public class DbService 
 {
-	private final IDbRepo db;
-	public DbService(IDbRepo repo) throws ClassNotFoundException, SQLException
+	private final DumpDBRepo db;
+	public DbService() throws IOException, ParseException
 	{
-		db = repo;
+		db = new DumpDBRepo();
 	}
 
 	public ExhaustiveChineseLookup lookupChinese(String chinese, boolean shouldSave) throws ExceptionPile
@@ -58,7 +61,7 @@ public class DbService
 		);
 		
 		Debug.logTimestamp("start exhaustive Chinese search");
-		final Map<String, CompletableFuture<List<SimpleLookup>>> supplementaryFutures = new LinkedHashMap<>(); 
+		final Map<String, CompletableFuture<List<ChineseSummaryLookup>>> supplementaryFutures = new LinkedHashMap<>(); 
 			alts.forEach(alt -> supplementaryFutures.put(alt.LOOKUP_NAME(), CompletableFuture.supplyAsync(() -> {
 				try
 				{
@@ -71,7 +74,7 @@ public class DbService
 				}
 			})));
 		
-		final Map<String, List<SimpleLookup>> supplementaries = new LinkedHashMap<>(); // linked hash map for predictable iteration order
+		final Map<String, List<ChineseSummaryLookup>> supplementaries = new LinkedHashMap<>(); // linked hash map for predictable iteration order
 		supplementaryFutures.keySet().forEach(altName -> {
 			try
 			{
@@ -105,14 +108,14 @@ public class DbService
 		return new ExhaustiveChineseLookup(directResults.join(), supplementaries);
 	}
 	
-	private List<SimpleLookup> rerankAlternates(String alternate, List<SimpleLookup> results) throws Exception
+	private List<ChineseSummaryLookup> rerankAlternates(String alternate, List<ChineseSummaryLookup> results) throws Exception
 	{
 		if(alternate.equals(SubstringSearch.LOOKUP_NAME))
 		{
 			return results;
 		}
 		
-		final List<String> candidates = results.stream().map(SimpleLookup::getZh).collect(Collectors.toCollection(ArrayList::new));
+		final List<String> candidates = results.stream().map(ChineseSummaryLookup::getChinese).collect(Collectors.toCollection(ArrayList::new));
 		final Map<String, Integer> pastHits = PastHitUtils.countHits(db.lookupPastHits(candidates));
 		return DbServiceUtils.rerank(results, pastHits);
 	}
@@ -121,16 +124,16 @@ public class DbService
 	{
 		try
 		{
-			final List<RawDictionaryRow> rawResults = db.lookupChinese(J9Shorthand.list(zh));
+			final List<DictionaryLine> rawResults = db.lookupChinese(J9Shorthand.list(zh));
 			final Map<String, List<String>> resultsByPinyin = new HashMap<>();
-			for(final RawDictionaryRow rawResult : rawResults)
+			for(final DictionaryLine rawResult : rawResults)
 			{
 				final String pinyin = rawResult.getPinyin();
 				if(!resultsByPinyin.keySet().contains(pinyin))
 				{
 					resultsByPinyin.put(pinyin, new ArrayList<>());
 				}
-				resultsByPinyin.get(pinyin).add(rawResult.getSingleDefinition());
+				resultsByPinyin.get(pinyin).add(rawResult.getdefinition());
 			}
 	
 			final String simplified = db.lookupSimplified(zh);
@@ -145,7 +148,7 @@ public class DbService
 		}
 	}
 	
-	private void saveChineseSeachHits(ChineseDefinitionLookup definitionLookup, List<SimpleLookup> substrings) throws Exception
+	private void saveChineseSeachHits(ChineseDefinitionLookup definitionLookup, List<ChineseSummaryLookup> substrings) throws Exception
 	{
 		final List<String> hits = new ArrayList<>();
 		if(!definitionLookup.getResults().isEmpty())
@@ -156,19 +159,19 @@ public class DbService
 		if(!substrings.isEmpty())
 		{
 			final List<String> substringHits = substrings.stream()
-				.filter(substringEntry -> ChineseText.trueChars(substringEntry.getZh()).size() > 1)
-				.map(SimpleLookup::getZh).collect(Collectors.toCollection(ArrayList::new));
+				.filter(substringEntry -> ChineseText.trueChars(substringEntry.getChinese()).size() > 1)
+				.map(ChineseSummaryLookup::getChinese).collect(Collectors.toCollection(ArrayList::new));
 			hits.addAll(substringHits);
 		}
 		db.saveHits(hits);
 	}
 	
-	public Map<String, List<SimpleLookup>> lookupEnglish(String en) throws ExceptionPile
+	public Map<String, List<ChineseSummaryLookup>> lookupEnglish(String en) throws ExceptionPile
 	{
 		Debug.logTimestamp("english start");
 		final List<Exception> exceptions = Collections.synchronizedList(new ArrayList<>());
 
-		final Map<String, CompletableFuture<List<SimpleLookup>>> wordFutures= new HashMap<>();
+		final Map<String, CompletableFuture<List<ChineseSummaryLookup>>> wordFutures= new HashMap<>();
 		final String[] individualWords = en.split(" ");
 		for(final String individualWord : individualWords)
 		{
@@ -185,10 +188,10 @@ public class DbService
 			}));
 		}
 		
-		final Map<String, List<SimpleLookup>> result= new HashMap<>();
+		final Map<String, List<ChineseSummaryLookup>> result= new HashMap<>();
 		for(final String word : wordFutures.keySet())
 		{
-			final List<SimpleLookup> singleResult = wordFutures.get(word).join();
+			final List<ChineseSummaryLookup> singleResult = wordFutures.get(word).join();
 			result.put(word, singleResult);
 		}
 		Debug.logTimestamp("english end");
@@ -200,13 +203,13 @@ public class DbService
 		return findUseableCombinations(result);
 	}
 	
-	private Map<String, List<SimpleLookup>> findUseableCombinations(Map<String, List<SimpleLookup>> individualDefinitions)
+	private Map<String, List<ChineseSummaryLookup>> findUseableCombinations(Map<String, List<ChineseSummaryLookup>> individualDefinitions)
 	{
 		final List<List<String>> combinations = GenerateCombinations.generateCombinations(new ArrayList<>(individualDefinitions.keySet()));
-		final Map<String, List<SimpleLookup>> result = new HashMap<String, List<SimpleLookup>>();
+		final Map<String, List<ChineseSummaryLookup>> result = new HashMap<String, List<ChineseSummaryLookup>>();
 		for(final List<String> combination : combinations)
 		{
-			final List<SimpleLookup> combinedLookup = getQualifyingEntries(individualDefinitions, combination);
+			final List<ChineseSummaryLookup> combinedLookup = getQualifyingEntries(individualDefinitions, combination);
 			if(!combinedLookup.isEmpty())
 			{
 				result.put(combination.toString(), combinedLookup);
@@ -215,31 +218,31 @@ public class DbService
 		return result;
 	}
 	
-	private List<SimpleLookup> getQualifyingEntries(Map<String, List<SimpleLookup>> individualDefinitions, List<String> combination)
+	private List<ChineseSummaryLookup> getQualifyingEntries(Map<String, List<ChineseSummaryLookup>> individualDefinitions, List<String> combination)
 	{
 		if(combination.size() == 1)
 		{
 			return individualDefinitions.get(combination.get(0));
 		}
 		
-		final List<SimpleLookup> result = new ArrayList<>(individualDefinitions.get(combination.get(0)));
+		final List<ChineseSummaryLookup> result = new ArrayList<>(individualDefinitions.get(combination.get(0)));
 		for(final String word : combination.subList(1, combination.size()))
 		{
-			final List<SimpleLookup> wordEntries = individualDefinitions.get(word);
+			final List<ChineseSummaryLookup> wordEntries = individualDefinitions.get(word);
 			result.retainAll(wordEntries);
 		}
 		return result;
 	}
 	
-	private List<SimpleLookup> lookupSingleEnglishWord(String singleWord) throws Exception
+	private List<ChineseSummaryLookup> lookupSingleEnglishWord(String singleWord) throws Exception
 	{
-		final List<SimpleLookup> rawResults =  DbServiceUtils.convertRawToSimple(db.lookupEnglish(singleWord));
-		final List<String> candidates = rawResults.stream().map(SimpleLookup::getZh).collect(Collectors.toCollection(ArrayList::new));
+		final List<ChineseSummaryLookup> rawResults =  DbServiceUtils.convertRawToSimple(db.lookupEnglish(singleWord));
+		final List<String> candidates = rawResults.stream().map(ChineseSummaryLookup::getChinese).collect(Collectors.toCollection(ArrayList::new));
 		final Map<String, Integer> pastHits = PastHitUtils.countHits(db.lookupPastHits(candidates));
 		return DbServiceUtils.rerank(rawResults, pastHits);
 	}
 
-	public void saveCedictDump(List<SimpleLookup> dictionary, List<MeasureWords> measureWords, Map<String, String> simplifiedChars) throws Exception
+	public void saveCedictDump(List<ChineseSummaryLookup> dictionary, Map<String, List<MeasureSummary>> measureWords, Map<String, String> simplifiedChars) throws Exception
 	{
 		new SaveCedict().save(dictionary, measureWords, simplifiedChars, db);
 	}
@@ -252,8 +255,8 @@ public class DbService
 	
 	private List<String> checkChineseInDictionary(List<String> words) throws Exception
 	{
-		final List<RawDictionaryRow> rawDictionaryRows = db.lookupChinese(words);
-		final Set<String> inDictionary = rawDictionaryRows.stream().map(RawDictionaryRow::getZh).collect(Collectors.toCollection(HashSet::new));
+		final List<DictionaryLine> rawDictionaryRows = db.lookupChinese(words);
+		final Set<String> inDictionary = rawDictionaryRows.stream().map(DictionaryLine::getZh).collect(Collectors.toCollection(HashSet::new));
 		return words.stream().filter(word -> inDictionary.contains(word)).collect(Collectors.toCollection(ArrayList::new));
 	}
 	
@@ -267,11 +270,11 @@ public class DbService
 		for(final String sentence : manySentences)
 		{
 			executor.submit(() -> {
-				List<SimpleLookup> compounds;
+				List<ChineseSummaryLookup> compounds;
 				try
 				{
 					compounds = new SubstringSearch(sentence, db).trySearch();
-					compounds.forEach(simpleLookup -> compoundWordSet.add(simpleLookup.getZh()));
+					compounds.forEach(simpleLookup -> compoundWordSet.add(simpleLookup.getChinese()));
 				}
 				catch(Exception e)
 				{

@@ -1,4 +1,4 @@
-package dt.jdictionary.sqlite.load;
+package dt.jdictionary.extload;
 
 import java.io.BufferedReader;
 import java.io.File;

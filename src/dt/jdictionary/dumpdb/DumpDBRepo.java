@@ -3,13 +3,11 @@ package dt.jdictionary.dumpdb;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -19,18 +17,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import dt.jdictionary.SimpleLookup;
-import dt.jdictionary.sqlite.raw.IDbRepo;
-import dt.jdictionary.sqlite.raw.PastHit;
-import dt.jdictionary.sqlite.raw.RawDictionaryRow;
-import dt.jdictionary.sqlite.raw.RawMeasureWordRow;
-import dt.jdictionary.sqlite.raw.RawSimplifiedRow;
-import dt.jdictionary.sqlite.raw.RawSubstringRow;
-import dt.jdictionary.sqlite.raw.RelatedChar;
+import dt.jdictionary.ChineseSummaryLookup;
+import dt.jdictionary.dumpdb.line.DictionaryLine;
+import dt.jdictionary.dumpdb.line.MeasureWordLine;
+import dt.jdictionary.dumpdb.line.PastHit;
+import dt.jdictionary.dumpdb.line.SimplifiedLine;
+import dt.jdictionary.dumpdb.line.SubstringLine;
 import dt.util.ChineseText;
 import dt.util.J9Shorthand;
+import dt.util.MapUtil;
 
-public class DumpDBRepo implements IDbRepo
+public class DumpDBRepo
 {
 
 	private static final String DUMP_PREFIX = System.getProperty("user.home") + "/Programs/JDictionary/";
@@ -47,15 +44,16 @@ public class DumpDBRepo implements IDbRepo
 	
 	private static final DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSS");
 	
-	private final Map<String, List<RawDictionaryRow>> indexByChinese = new HashMap<>();
-	private final Map<String, List<RawDictionaryRow>> indexByPinyinNorm = new HashMap<>();
-	private final Map<String, List<RawDictionaryRow>> indexByFirstChar = new HashMap<>();
-	private final Map<String, List<RawDictionaryRow>> indexByLastChar = new HashMap<>();
+	private final Map<String, List<DictionaryLine>> indexByChinese = new HashMap<>();
+	private final Map<String, List<DictionaryLine>> indexByPinyinNorm = new HashMap<>();
+	private final Map<String, List<DictionaryLine>> indexByFirstChar = new HashMap<>();
+	private final Map<String, List<DictionaryLine>> indexByLastChar = new HashMap<>();
 	private final Map<String, String> simplifiedMap = new HashMap<>();
 	private final Map<String, List<String>> substringMap = new HashMap<>();
 	private final Map<String, List<String>> measureMap = new HashMap<>();
 	private final Map<String, List<String>> englishMap = new HashMap<>();
 	private final Map<String, List<Date>> pastHitsMap = new HashMap<>();
+	private final Map<String, String> simplifiedCache = new HashMap<>();
 	
 	private final PrintWriter pastHitsWriter;
 	
@@ -85,7 +83,7 @@ public class DumpDBRepo implements IDbRepo
 		while(line != null)
 		{
 			final String[] parts = line.split(DELIM);
-			final RawDictionaryRow row = new RawDictionaryRow(
+			final DictionaryLine row = new DictionaryLine(
 					parts[0], 
 					parts[1], 
 					parts[2], 
@@ -94,10 +92,10 @@ public class DumpDBRepo implements IDbRepo
 					parts[5].equals(NULL) ? null : parts[5], 
 					Double.parseDouble(parts[6])
 			);
-			addToListMap(indexByChinese, row.getZh(), row);
-			addToListMap(indexByPinyinNorm, row.getPinyinNormalized(), row);
-			addToListMap(indexByFirstChar, row.getFirstChar(), row);
-			addToListMap(indexByLastChar, row.getLastChar(), row);
+			MapUtil.addToListMap(indexByChinese, row.getZh(), row);
+			MapUtil.addToListMap(indexByPinyinNorm, row.getPinyinNormalized(), row);
+			MapUtil.addToListMap(indexByFirstChar, row.getFirstChar(), row);
+			MapUtil.addToListMap(indexByLastChar, row.getLastChar(), row);
 			line = reader.readLine();
 		}
 		reader.close();
@@ -123,24 +121,10 @@ public class DumpDBRepo implements IDbRepo
 		while(line != null)
 		{
 			final String[] parts = line.split(DELIM);
-			addToListMap(target, parts[0], parts[1]);
+			MapUtil.addToListMap(target, parts[0], parts[1]);
 			line = reader.readLine();
 		}
 		reader.close();
-	}
-	
-	private <K,V> void addToListMap(Map<K,List<V>> target, K key, V value)
-	{
-		if(key == null)
-		{
-			return;
-		}
-		
-		if(!target.containsKey(key))
-		{
-			target.put(key, new ArrayList<>());
-		}
-		target.get(key).add(value);
 	}
 	
 	private void loadPastHits() throws IOException, ParseException
@@ -150,20 +134,18 @@ public class DumpDBRepo implements IDbRepo
 		while(line != null)
 		{
 			final String[] parts = line.split(DELIM);
-			addToListMap(pastHitsMap, parts[0], dateFormatter.parse(parts[1]));
+			MapUtil.addToListMap(pastHitsMap, parts[0], dateFormatter.parse(parts[1]));
 			line = reader.readLine();
 		}
 		reader.close();
 	}
 	
-	@Override
-	public void init() throws SQLException
+	public void init()
 	{
 		// Nothing to initialize. Instantiating already creates the dump files as needed.
 	}
 
-	@Override
-	public void wipe() throws SQLException, IOException
+	public void wipe() throws IOException
 	{
 		final List<String> toWipe = J9Shorthand.list(DUMP_CHINESE, DUMP_ENGLISH, DUMP_MEASURE, DUMP_SIMPLIFIED, DUMP_SUBSTRING);
 		for(final String wipeMe : toWipe)
@@ -173,23 +155,21 @@ public class DumpDBRepo implements IDbRepo
 			wipable.createNewFile();
 		}
 		
-		J9Shorthand.list(indexByChinese, indexByPinyinNorm, indexByFirstChar, indexByLastChar, simplifiedMap, substringMap, englishMap).forEach(Map::clear);
+		J9Shorthand.list(indexByChinese, indexByPinyinNorm, indexByFirstChar, indexByLastChar, simplifiedMap, substringMap, englishMap, simplifiedCache).forEach(Map::clear);
 	}
 
-	@Override
-	public void saveHits(List<String> hits) throws SQLException
+	public void saveHits(List<String> hits)
 	{
 		for(final String hit : hits)
 		{
 			final Date now = new Date();
 			pastHitsWriter.println(String.format("%s%s%s", hit, DELIM, dateFormatter.format(now)));
 			pastHitsWriter.flush();
-			addToListMap(pastHitsMap, hit, now);
+			MapUtil.addToListMap(pastHitsMap, hit, now);
 		}
 	}
 
-	@Override
-	public List<PastHit> lookupPastHits(List<String> candidates) throws SQLException, ParseException
+	public List<PastHit> lookupPastHits(List<String> candidates) throws ParseException
 	{
 		final List<PastHit> result = new ArrayList<>();
 		for(final String candidate : candidates)
@@ -203,10 +183,9 @@ public class DumpDBRepo implements IDbRepo
 		return result;
 	}
 
-	@Override
-	public List<RawDictionaryRow> lookupChinese(List<String> zhStrings) throws SQLException
+	public List<DictionaryLine> lookupChinese(List<String> zhStrings)
 	{
-		final List<RawDictionaryRow> result = new ArrayList<>();
+		final List<DictionaryLine> result = new ArrayList<>();
 		for(final String zhString : zhStrings)
 		{
 			result.addAll(indexByChinese.getOrDefault(zhString, new ArrayList<>()));
@@ -214,29 +193,45 @@ public class DumpDBRepo implements IDbRepo
 		return result;
 	}
 
-	@Override
-	public String lookupSimplified(String zh) throws SQLException
+	public String lookupSimplified(String zh)
 	{
-		return simplifiedMap.getOrDefault(zh, "");
+		if(simplifiedCache.containsKey(zh))
+		{
+			return simplifiedCache.get(zh);
+		}
+		
+		String zhSimplified = "";
+		final List<String> chars = ChineseText.trueChars(zh);
+		for(final String singleChar : chars)
+		{
+			final String singleSimplified = simplifiedMap.get(singleChar);
+			if(singleSimplified == null)
+			{
+				zhSimplified = zhSimplified + singleChar;
+			}
+			else
+			{
+				zhSimplified = zhSimplified + singleSimplified;
+			}
+		}
+		simplifiedCache.put(zh, zhSimplified);
+		return zhSimplified;
 	}
 
-	@Override
-	public List<String> lookupMeasureWords(String zh) throws SQLException
+	public List<String> lookupMeasureWords(String zh)
 	{
 		return measureMap.getOrDefault(zh, new ArrayList<>());
 	}
 
-	@Override
-	public List<RawDictionaryRow> lookupRelatedWord(String zh, RelatedChar similarity) throws SQLException
+	public List<DictionaryLine> lookupRelatedWord(String zh, RelatedChar similarity)
 	{
 		return  similarity == RelatedChar.SAME_FRONT ? indexByFirstChar.getOrDefault(zh, new ArrayList<>()) : indexByLastChar.getOrDefault(zh, new ArrayList<>());
 	}
 
-	@Override
-	public List<RawDictionaryRow> lookupEnglish(String en) throws SQLException
+	public List<DictionaryLine> lookupEnglish(String en)
 	{
 		final List<String> chineseMatches = englishMap.get(en);
-		final List<RawDictionaryRow> result = new ArrayList<>();
+		final List<DictionaryLine> result = new ArrayList<>();
 		for(final String match : chineseMatches)
 		{
 			result.addAll(indexByChinese.getOrDefault(match, new ArrayList<>()));
@@ -244,16 +239,14 @@ public class DumpDBRepo implements IDbRepo
 		return result;
 	}
 
-	@Override
-	public List<String> trySubstring(String compoundWord) throws SQLException
+	public List<String> trySubstring(String compoundWord)
 	{
 		return substringMap.getOrDefault(compoundWord, new ArrayList<>());
 	}
 
-	@Override
-	public List<RawDictionaryRow> findByNormalizedPinyin(List<String> normalizedPinyins) throws SQLException
+	public List<DictionaryLine> findByNormalizedPinyin(List<String> normalizedPinyins)
 	{
-		final List<RawDictionaryRow> result = new ArrayList<>();
+		final List<DictionaryLine> result = new ArrayList<>();
 		for(final String zhString : normalizedPinyins)
 		{
 			result.addAll(indexByPinyinNorm.getOrDefault(zhString, new ArrayList<>()));
@@ -261,19 +254,18 @@ public class DumpDBRepo implements IDbRepo
 		return result;	
 	}
 
-	@Override
-	public void fillDictionary(List<SimpleLookup> allEntries) throws SQLException, IOException
+	public void fillDictionary(List<ChineseSummaryLookup> allEntries) throws IOException
 	{
 		final Map<String, List<String>> newEnglishMap = new HashMap<>();
 		final PrintWriter chineseDumpWriter = new PrintWriter(new FileWriter(DUMP_CHINESE, false));
-		for(final SimpleLookup entry : allEntries)
+		for(final ChineseSummaryLookup entry : allEntries)
 		{
-			final List<String> trueChars = ChineseText.trueChars(entry.getZh());
+			final List<String> trueChars = ChineseText.trueChars(entry.getChinese());
 			final String firstChar = trueChars.size() > 1 ? trueChars.get(0) : NULL;
 			final String lastChar = trueChars.size() > 1 ? trueChars.get(trueChars.size()-1) : NULL;
-			final String definition = String.join(", ", entry.getDefinitions()).toLowerCase().replace(DELIM, DELIM_ESC);
+			final String definition = entry.getDefinition().toLowerCase().replace(DELIM, DELIM_ESC);
 			chineseDumpWriter.println(String.format("%s%s%s%s%s%s%s%s%s%s%s%s%f", 
-					entry.getZh(), DELIM, 
+					entry.getChinese(), DELIM, 
 					entry.getPinyin(), DELIM, 
 					ChineseText.normalizePinyin(entry.getPinyin()), DELIM,
 					definition, DELIM,
@@ -299,34 +291,31 @@ public class DumpDBRepo implements IDbRepo
 		loadKeyListOfValues(DUMP_ENGLISH, englishMap);
 	}
 	
-	private void addToNewEnglishMap(Map<String, List<String>> newEnglishMap, SimpleLookup entry)
+	private void addToNewEnglishMap(Map<String, List<String>> newEnglishMap, ChineseSummaryLookup entry)
 	{
 		final List<String> words = new ArrayList<>();
-		for(final String def : entry.getDefinitions())
+
+		final String nonHyphenated = entry.getDefinition().replaceAll("\\-", " ");
+		final String[] defWords = nonHyphenated.split(" ");
+		for(final String defWord : defWords)
 		{
-			final String nonHyphenated = def.replaceAll("\\-", " ");
-			final String[] defWords = nonHyphenated.split(" ");
-			for(final String defWord : defWords)
+			final String cleaned = defWord.replaceAll("[^a-zA-Z]", "");
+			if(!cleaned.isEmpty())
 			{
-				final String cleaned = defWord.replaceAll("[^a-zA-Z]", "");
-				if(!cleaned.isEmpty())
-				{
-					words.add(cleaned);
-				}
+				words.add(cleaned);
 			}
 		}
-		
+				
 		for(final String word : words)
 		{
-			addToListMap(newEnglishMap, word, entry.getZh());
+			MapUtil.addToListMap(newEnglishMap, word, entry.getChinese());
 		}
 	}
 
-	@Override
-	public void fillMeasureWords(List<RawMeasureWordRow> allRows) throws SQLException, IOException
+	public void fillMeasureWords(List<MeasureWordLine> allRows) throws IOException
 	{
 		final PrintWriter measureWriter = new PrintWriter(new FileWriter(DUMP_MEASURE, false));
-		for(final RawMeasureWordRow row : allRows)
+		for(final MeasureWordLine row : allRows)
 		{
 			measureWriter.println(String.format("%s%s%s%s%s", row.getZh(), DELIM, row.getMeasure(), DELIM, row.getMeasurePinyin()));
 		}
@@ -334,23 +323,21 @@ public class DumpDBRepo implements IDbRepo
 		loadKeyListOfValues(DUMP_MEASURE, measureMap);
 	}
 
-	@Override
-	public void fillSimplified(List<RawSimplifiedRow> allRows) throws SQLException, IOException
+	public void fillSimplified(List<SimplifiedLine> allRows) throws IOException
 	{
 		final PrintWriter simplifiedWriter = new PrintWriter(new FileWriter(DUMP_SIMPLIFIED, false));
-		for(final RawSimplifiedRow row : allRows)
+		for(final SimplifiedLine row : allRows)
 		{
-			simplifiedWriter.println(String.format("%s%s%s", row.getSimplified(), DELIM, row.getOriginal()));
+			simplifiedWriter.println(String.format("%s%s%s", row.getOriginal(), DELIM, row.getSimplified()));
 		}
 		simplifiedWriter.close();			
 		loadSimplified();
 	}
 
-	@Override
-	public void fillSubstrings(List<RawSubstringRow> allRows) throws SQLException, IOException
+	public void fillSubstrings(List<SubstringLine> allRows) throws IOException
 	{
 		final PrintWriter simplifiedWriter = new PrintWriter(new FileWriter(DUMP_SUBSTRING, false));
-		for(final RawSubstringRow row : allRows)
+		for(final SubstringLine row : allRows)
 		{
 			simplifiedWriter.println(String.format("%s%s%s", row.getSubstring(), DELIM, row.getFullString()));
 		}

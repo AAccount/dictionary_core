@@ -1,26 +1,25 @@
-package dt.jdictionary.sqlite.dbservice.alternative;
+package dt.jdictionary.dbservice.alternative;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import dt.jdictionary.SimpleLookup;
-import dt.jdictionary.sqlite.dbservice.DbServiceUtils;
-import dt.jdictionary.sqlite.raw.IDbRepo;
+import dt.jdictionary.ChineseSummaryLookup;
+import dt.jdictionary.dbservice.DbServiceUtils;
+import dt.jdictionary.dumpdb.DumpDBRepo;
 import dt.jdictionary.util.GenerateSubstrings;
 import dt.util.ChineseText;
 
 public class SubstringSearch implements AlternateSearch
 {
 	private final String zh;
-	private final IDbRepo db;
+	private final DumpDBRepo db;
 	private final Map<String, Double> frontToBackRanking;
 	public static final String LOOKUP_NAME = "Substring";
 	
-	public SubstringSearch(String zh, IDbRepo db)
+	public SubstringSearch(String zh, DumpDBRepo db)
 	{
 		this.zh = zh;
 		this.db = db;
@@ -28,21 +27,13 @@ public class SubstringSearch implements AlternateSearch
 	}
 
 	@Override
-	public List<SimpleLookup> trySearch() throws Exception
+	public List<ChineseSummaryLookup> trySearch()
 	{
 		final List<String> allSubstrings = GenerateSubstrings.generateSubstrings(this.zh);
 		return DbServiceUtils
 				.convertRawToSimple(this.db.lookupChinese(allSubstrings))
-				.stream().map(simpleLookup -> new SimpleLookup(simpleLookup, this.rankBasedOnOriginalFrontToBack(simpleLookup.getZh())))
+				.stream().map(simpleLookup -> new ChineseSummaryLookup(simpleLookup, this.rankBasedOnOriginalFrontToBack(simpleLookup.getChinese())))
 				.collect(Collectors.toCollection(ArrayList::new));
-		
-//		if(UiConstants.getFlag(UiConstants.FLAG_ALWAYS_SINGLE_SUBSTRING))
-//		{
-//			return allResults;
-//		}
-//		
-//		final List<SimpleLookup> nonSingle = allResults.stream().filter(result -> ChineseText.trueChars(result.getZh()).size() > 1).collect(Collectors.toCollection(ArrayList::new));
-//		return nonSingle.isEmpty() ? allResults : nonSingle;
 	}
 
 	@Override

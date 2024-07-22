@@ -1,4 +1,4 @@
-package dt.jdictionary.sqlite.dbservice;
+package dt.jdictionary;
 
 import java.util.ArrayList;
 import java.util.List;

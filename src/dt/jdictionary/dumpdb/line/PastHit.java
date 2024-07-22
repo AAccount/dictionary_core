@@ -1,4 +1,4 @@
-package dt.jdictionary.sqlite.raw;
+package dt.jdictionary.dumpdb.line;
 
 import java.util.Date;
 import java.util.Objects;

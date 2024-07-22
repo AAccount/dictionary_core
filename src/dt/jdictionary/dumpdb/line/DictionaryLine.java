@@ -1,10 +1,6 @@
-package dt.jdictionary.dumpdb;
+package dt.jdictionary.dumpdb.line;
 
-import java.util.List;
-
-import dt.util.ChineseText;
-
-public class DictionaryDumpRow 
+public class DictionaryLine 
 {
 	private final String zh;
 	private final String pinyin;
@@ -14,25 +10,24 @@ public class DictionaryDumpRow
 	private final String lastChar;
 	private final double rank;
 
-	public DictionaryDumpRow(String zh, String pinyin, String definition, double rank) 
-	{
-		this.zh = zh;
-		this.pinyin = pinyin;
-		this.pinyinNormalized = ChineseText.normalizePinyin(pinyin);
-		this.definition = definition;
-		this.rank = rank;
-		
-		final List<String> trueChars = ChineseText.trueChars(zh);
-		this.firstChar = trueChars.size() > 1 ? trueChars.get(0) : null;
-		this.lastChar = trueChars.size() > 1 ? trueChars.get(trueChars.size()-1) : null;
-	}
+//	public DictionaryLine(String zh, String pinyin, double rank) 
+//	{
+//		this.zh = zh;
+//		this.pinyin = pinyin;
+//		this.pinyinNormalized = ChineseText.normalizePinyin(pinyin);
+//		this.definition = null;
+//		this.rank = rank;
+//		final List<String> trueChars = ChineseText.trueChars(zh);
+//		this.firstChar = trueChars.size() > 1 ? trueChars.get(0) : null;
+//		this.lastChar = trueChars.size() > 1 ? trueChars.get(trueChars.size()-1) : null;
+//	}
 
-	public DictionaryDumpRow(String zh, String pinyin, String pinyinNormalized, String definition, String firstChar, String lastChar, double rank) 
+	public DictionaryLine(String zh, String pinyin, String pinyinNormalized, String singleDefinition, String firstChar, String lastChar, double rank) 
 	{
 		this.zh = zh;
 		this.pinyin = pinyin;
 		this.pinyinNormalized = pinyinNormalized;
-		this.definition = definition;
+		this.definition = singleDefinition;
 		this.firstChar = firstChar;
 		this.lastChar = lastChar;
 		this.rank = rank;
@@ -48,7 +43,7 @@ public class DictionaryDumpRow
 		return pinyin;
 	}
 
-	public String getDefinition() 
+	public String getdefinition() 
 	{
 		return definition;
 	}
@@ -93,7 +88,7 @@ public class DictionaryDumpRow
 			return false;
 		}
 		
-		final DictionaryDumpRow casted = (DictionaryDumpRow)obj;
+		final DictionaryLine casted = (DictionaryLine)obj;
 		return 
 			casted.zh.equals(this.zh) && 
 			casted.pinyin.equals(this.pinyin) && 

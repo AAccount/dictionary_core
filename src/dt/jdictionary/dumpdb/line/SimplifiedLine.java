@@ -1,11 +1,11 @@
-package dt.jdictionary.sqlite.raw;
+package dt.jdictionary.dumpdb.line;
 
-public class RawSimplifiedRow 
+public class SimplifiedLine 
 {
 	private final String original;
 	private final String simplified;
 
-	public RawSimplifiedRow(String original, String simplified) 
+	public SimplifiedLine(String original, String simplified) 
 	{
 		this.original = original;
 		this.simplified = simplified;
@@ -41,7 +41,7 @@ public class RawSimplifiedRow
 			return false;
 		}
 
-		final RawSimplifiedRow casted = (RawSimplifiedRow)obj;
+		final SimplifiedLine casted = (SimplifiedLine)obj;
 		return
 			casted.original.equals(this.original) &&
 			casted.simplified.equals(this.simplified);

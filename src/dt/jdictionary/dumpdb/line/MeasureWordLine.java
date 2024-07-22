@@ -1,12 +1,12 @@
-package dt.jdictionary.sqlite.raw;
+package dt.jdictionary.dumpdb.line;
 
-public class RawMeasureWordRow 
+public class MeasureWordLine 
 {
 	private final String zh;
 	private final String measure;
 	private final String measurePinyin;
 
-	public RawMeasureWordRow(String zh, String measure, String measurePinyin) 
+	public MeasureWordLine(String zh, String measure, String measurePinyin) 
 	{
 		this.zh = zh;
 		this.measure = measure;
@@ -42,7 +42,7 @@ public class RawMeasureWordRow
 			return false;
 		}
 
-		final RawMeasureWordRow casted = (RawMeasureWordRow)obj;
+		final MeasureWordLine casted = (MeasureWordLine)obj;
 		return
 			casted.zh.equals(this.zh) &&
 			casted.measure.equals(this.measure) &&
