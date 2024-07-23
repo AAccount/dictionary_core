@@ -2,6 +2,7 @@ package dt.jdictionary.dbservice;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -10,46 +11,71 @@ import java.util.stream.Collectors;
 
 import dt.jdictionary.ChineseSummaryLookup;
 import dt.jdictionary.MeasureSummary;
+import dt.jdictionary.ProgressListener;
+import dt.jdictionary.dumpdb.DbFillListener;
 import dt.jdictionary.dumpdb.DumpDBRepo;
+import dt.jdictionary.dumpdb.DumpFile;
 import dt.jdictionary.dumpdb.line.MeasureWordLine;
 import dt.jdictionary.dumpdb.line.SimplifiedLine;
 import dt.jdictionary.dumpdb.line.SubstringLine;
 import dt.jdictionary.util.GenerateSubstrings;
 import dt.util.ChineseText;
 import dt.util.Debug;
+import dt.util.MapUtil;
 
-public class SaveCedict 
+public class SaveCedict implements DbFillListener
 {
-	public void save(List<ChineseSummaryLookup> dictionary, Map<String, List<MeasureSummary>> measureWords, Map<String, String> simplifiedChars, DumpDBRepo db) throws IOException
+	private final DumpDBRepo db;
+	private final List<ChineseSummaryLookup> dictionary;
+	private final Map<String, List<String>> englishDefinitionWordToChinese;
+	private final int totalEnglishLines;
+	private final List<SubstringLine> substringLines;
+	private final List<MeasureWordLine> measureWordLines;
+	private final List<SimplifiedLine> simplifiedLines;
+	private final ProgressListener externalListener;
+	private final int totalExpectedWrites;
+	
+	public SaveCedict(DumpDBRepo db, List<ChineseSummaryLookup> dictionary, Map<String, List<MeasureSummary>> measureWords, Map<String, String> simplifiedChars,ProgressListener listener)
 	{
-		if(dictionary.size() == 0)
+		this.db = db;
+		this.dictionary = dictionary;
+		this.englishDefinitionWordToChinese = englishDefWordsToChineseMap(dictionary);
+		this.totalEnglishLines = englishDefinitionWordToChinese.values().stream().reduce(0, (total, chineseList) -> total + chineseList.size(), Integer::sum);
+		this.substringLines = fillSubstrings(dictionary);
+		this.measureWordLines = fillMeasureWords(measureWords);
+		this.simplifiedLines = fillSimplified(simplifiedChars);
+		this.externalListener = listener;
+		
+		this.totalExpectedWrites = 
+				dictionary.size() +
+				this.totalEnglishLines +
+				measureWordLines.size() +
+				simplifiedLines.size() +
+				substringLines.size();
+	}
+	
+	public void save() throws IOException
+	{
+		if(this.dictionary.size() == 0)
 		{
 			Debug.logTimestamp("Empty dump. Don't wipe!");
+			this.externalListener.onProgress(1, 1);
 			return;
 		}
-
-//		final int dictionarySize = dump.getDictionary().size();
-//		final int uptoDictTrxes = DbRepo.INIT_TRX_COUNT + dictionarySize + DbRepo.DICT_EN_TRX;
-//		final int totalTrxes = uptoDictTrxes + DbRepo.POST_DICT_TRX;
-//		progressListener.onProgress(0, totalTrxes);
+				
 		db.wipe();
-//		progressListener.onProgress(1, totalTrxes);
-		db.init();
-//		progressListener.onProgress(2, totalTrxes);
-
-		db.fillDictionary(dictionary);
-		fillMeasureWords(measureWords, db);
-//		progressListener.onProgress(uptoDictTrxes + 1, totalTrxes);
-		fillSimplified(simplifiedChars, db);
-//		progressListener.onProgress(uptoDictTrxes + 2, totalTrxes);
-		fillSubstrings(dictionary, db);
-//		progressListener.onProgress(uptoDictTrxes + 3, totalTrxes);
+		db.fillDictionary(dictionary, this);
+		db.fillEnglishMap(englishDefinitionWordToChinese, this);
+		db.fillMeasureWords(measureWordLines, this);
+		db.fillSimplified(simplifiedLines, this);
+		db.fillSubstrings(substringLines, this);
 	}
 
-	private void fillSubstrings(List<ChineseSummaryLookup> dictionary, DumpDBRepo db) throws IOException
+	private List<SubstringLine> fillSubstrings(List<ChineseSummaryLookup> dictionary)
 	{
 		final List<ChineseSummaryLookup> substringEntries = dictionary.stream()
-			.filter(unrankedlookup -> unrankedlookup.getChinese().length() > 1 && ChineseText.allChinese(unrankedlookup.getChinese())).collect(Collectors.toCollection(ArrayList::new));
+			.filter(summary -> summary.getChinese().length() > 1 && ChineseText.allChinese(summary.getChinese()))
+			.collect(Collectors.toCollection(ArrayList::new));
 
 		final Set<SubstringLine> result = new HashSet<>();
 		for(final ChineseSummaryLookup simpleLookup : substringEntries)
@@ -60,10 +86,10 @@ public class SaveCedict
 				result.add(new SubstringLine(substring, simpleLookup.getChinese()));
 			}
 		}
-		db.fillSubstrings(new ArrayList<>(result));
+		return new ArrayList<>(result); 
 	}
 
-	private void fillMeasureWords(Map<String, List<MeasureSummary>> measureWords, DumpDBRepo db) throws IOException
+	private List<MeasureWordLine> fillMeasureWords(Map<String, List<MeasureSummary>> measureWords)
 	{
 		final Set<MeasureWordLine> mwTracker = new HashSet<>();
 		for(final String noun : measureWords.keySet())
@@ -73,16 +99,67 @@ public class SaveCedict
 				mwTracker.add(new MeasureWordLine(noun, summary.getMeasureWord(), summary.getMeasurePinyin()));
 			}
 		}
-		db.fillMeasureWords(new ArrayList<>(mwTracker));
+		return new ArrayList<>(mwTracker);
 	}
 
-	private void fillSimplified(Map<String, String> simplifiedChars, DumpDBRepo db) throws IOException
+	private List<SimplifiedLine> fillSimplified(Map<String, String> simplifiedChars)
 	{
 		final List<SimplifiedLine> simplifieds = new ArrayList<>();
 		for(final String original : simplifiedChars.keySet())
 		{
 			simplifieds.add(new SimplifiedLine(original, simplifiedChars.get(original)));
 		}
-		db.fillSimplified(simplifieds);
+		return simplifieds;
+	}
+	
+	private Map<String, List<String>> englishDefWordsToChineseMap(List<ChineseSummaryLookup> allEntries)
+	{
+		final Map<String, List<String>> englishMap = new HashMap<>();
+		for(final ChineseSummaryLookup entry : allEntries)
+		{
+			final List<String> words = new ArrayList<>();
+			final String nonHyphenated = entry.getDefinition().replaceAll("\\-", " ");
+			final String[] defWords = nonHyphenated.split(" ");
+			for(final String defWord : defWords)
+			{
+				final String cleaned = defWord.replaceAll("[^a-zA-Z]", "");
+				if(!cleaned.isEmpty())
+				{
+					words.add(cleaned);
+				}
+			}
+					
+			for(final String word : words)
+			{
+				MapUtil.addToListMap(englishMap, word, entry.getChinese());
+			}
+		}
+		return englishMap;
+	}
+
+	@Override
+	public void onDiskWrite(DumpFile dumpFile, int writes)
+	{
+		int previousWrites = 0;
+		switch(dumpFile)
+		{
+			case ENGLISH:
+				previousWrites = this.dictionary.size();
+				break;
+			case MEASURE_WORDS:
+				previousWrites = this.dictionary.size() + this.totalEnglishLines;
+				break;
+			case SIMPLIFIED:
+				previousWrites = this.dictionary.size() + this.totalEnglishLines + this.measureWordLines.size();
+				break;
+			case SUBSTRING:
+				previousWrites = this.dictionary.size() + this.totalEnglishLines + this.measureWordLines.size() + this.simplifiedLines.size();
+				break;
+			case CHINESE: // This is the first dump to be written. There are no previous writes.
+				break;
+			default:
+				break;
+		}
+		this.externalListener.onProgress(previousWrites + writes, totalExpectedWrites);
 	}
 }

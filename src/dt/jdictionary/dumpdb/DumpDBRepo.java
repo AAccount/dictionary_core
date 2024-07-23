@@ -139,11 +139,6 @@ public class DumpDBRepo
 		}
 		reader.close();
 	}
-	
-	public void init()
-	{
-		// Nothing to initialize. Instantiating already creates the dump files as needed.
-	}
 
 	public void wipe() throws IOException
 	{
@@ -254,9 +249,9 @@ public class DumpDBRepo
 		return result;	
 	}
 
-	public void fillDictionary(List<ChineseSummaryLookup> allEntries) throws IOException
+	public void fillDictionary(List<ChineseSummaryLookup> allEntries, DbFillListener fillListener) throws IOException
 	{
-		final Map<String, List<String>> newEnglishMap = new HashMap<>();
+		int writes = 0;
 		final PrintWriter chineseDumpWriter = new PrintWriter(new FileWriter(DUMP_CHINESE, false));
 		for(final ChineseSummaryLookup entry : allEntries)
 		{
@@ -272,77 +267,72 @@ public class DumpDBRepo
 					firstChar, DELIM,
 					lastChar, DELIM,
 					entry.getRank()));
-			addToNewEnglishMap(newEnglishMap, entry);
+			writes++;
+			fillListener.onDiskWrite(DumpFile.CHINESE, writes);
 		}
 		chineseDumpWriter.close();
 		
+		loadIndices();
+	}
+	
+	public void fillEnglishMap(Map<String, List<String>> enToPossibleChinese, DbFillListener fillListener) throws IOException
+	{
+		int writes = 0;
 		final PrintWriter englishDumpWriter = new PrintWriter(new FileWriter(DUMP_ENGLISH, false));
-		for(final String word : newEnglishMap.keySet())
+		for(final String word : enToPossibleChinese.keySet())
 		{
-			final List<String> potentials = newEnglishMap.get(word);
+			final List<String> potentials = enToPossibleChinese.get(word);
 			for(final String potential : potentials)
 			{
 				englishDumpWriter.println(String.format("%s%s%s", word, DELIM, potential));
+				writes++;
+				fillListener.onDiskWrite(DumpFile.ENGLISH, writes);
 			}
 		}
 		englishDumpWriter.close();
-		
-		loadIndices();
 		loadKeyListOfValues(DUMP_ENGLISH, englishMap);
 	}
-	
-	private void addToNewEnglishMap(Map<String, List<String>> newEnglishMap, ChineseSummaryLookup entry)
-	{
-		final List<String> words = new ArrayList<>();
 
-		final String nonHyphenated = entry.getDefinition().replaceAll("\\-", " ");
-		final String[] defWords = nonHyphenated.split(" ");
-		for(final String defWord : defWords)
-		{
-			final String cleaned = defWord.replaceAll("[^a-zA-Z]", "");
-			if(!cleaned.isEmpty())
-			{
-				words.add(cleaned);
-			}
-		}
-				
-		for(final String word : words)
-		{
-			MapUtil.addToListMap(newEnglishMap, word, entry.getChinese());
-		}
-	}
 
-	public void fillMeasureWords(List<MeasureWordLine> allRows) throws IOException
+	public void fillMeasureWords(List<MeasureWordLine> allRows, DbFillListener fillListener) throws IOException
 	{
+		int writes = 0;
 		final PrintWriter measureWriter = new PrintWriter(new FileWriter(DUMP_MEASURE, false));
 		for(final MeasureWordLine row : allRows)
 		{
 			measureWriter.println(String.format("%s%s%s%s%s", row.getZh(), DELIM, row.getMeasure(), DELIM, row.getMeasurePinyin()));
+			writes++;
+			fillListener.onDiskWrite(DumpFile.MEASURE_WORDS, writes);
 		}
 		measureWriter.close();		
 		loadKeyListOfValues(DUMP_MEASURE, measureMap);
 	}
 
-	public void fillSimplified(List<SimplifiedLine> allRows) throws IOException
+	public void fillSimplified(List<SimplifiedLine> allRows, DbFillListener fillListener) throws IOException
 	{
+		int writes = 0;
 		final PrintWriter simplifiedWriter = new PrintWriter(new FileWriter(DUMP_SIMPLIFIED, false));
 		for(final SimplifiedLine row : allRows)
 		{
 			simplifiedWriter.println(String.format("%s%s%s", row.getOriginal(), DELIM, row.getSimplified()));
+			writes++;
+			fillListener.onDiskWrite(DumpFile.SIMPLIFIED, writes);
 		}
 		simplifiedWriter.close();			
 		loadSimplified();
 	}
 
-	public void fillSubstrings(List<SubstringLine> allRows) throws IOException
+	public void fillSubstrings(List<SubstringLine> allRows, DbFillListener fillListener) throws IOException
 	{
+		int writes = 0;
 		final PrintWriter simplifiedWriter = new PrintWriter(new FileWriter(DUMP_SUBSTRING, false));
 		for(final SubstringLine row : allRows)
 		{
 			simplifiedWriter.println(String.format("%s%s%s", row.getSubstring(), DELIM, row.getFullString()));
+			writes++;
+			fillListener.onDiskWrite(DumpFile.SUBSTRING, writes);
 		}
 		simplifiedWriter.close();		
 		loadKeyListOfValues(DUMP_SUBSTRING, substringMap);
 	}
-
 }

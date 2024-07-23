@@ -22,6 +22,7 @@ import dt.jdictionary.ChineseSummaryLookup;
 import dt.jdictionary.ExceptionPile;
 import dt.jdictionary.ExhaustiveChineseLookup;
 import dt.jdictionary.MeasureSummary;
+import dt.jdictionary.ProgressListener;
 import dt.jdictionary.dbservice.alternative.AlternateSearch;
 import dt.jdictionary.dbservice.alternative.DeinterlaceSearch;
 import dt.jdictionary.dbservice.alternative.SameBackSearch;
@@ -242,9 +243,9 @@ public class DbService
 		return DbServiceUtils.rerank(rawResults, pastHits);
 	}
 
-	public void saveCedictDump(List<ChineseSummaryLookup> dictionary, Map<String, List<MeasureSummary>> measureWords, Map<String, String> simplifiedChars) throws Exception
+	public void saveCedictDump(List<ChineseSummaryLookup> dictionary, Map<String, List<MeasureSummary>> measureWords, Map<String, String> simplifiedChars, ProgressListener listener) throws Exception
 	{
-		new SaveCedict().save(dictionary, measureWords, simplifiedChars, db);
+		new SaveCedict(db, dictionary, measureWords, simplifiedChars, listener).save();;
 	}
 	
 	public void savePastHits(List<String> words, boolean verifyInDictionary) throws Exception
