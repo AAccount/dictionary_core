@@ -21,6 +21,7 @@ import dt.jdictionary.ChineseDefinitionLookup;
 import dt.jdictionary.ChineseSummaryLookup;
 import dt.jdictionary.ExceptionPile;
 import dt.jdictionary.ExhaustiveChineseLookup;
+import dt.jdictionary.InitListener;
 import dt.jdictionary.MeasureSummary;
 import dt.jdictionary.ProgressListener;
 import dt.jdictionary.dbservice.alternative.AlternateSearch;
@@ -41,9 +42,9 @@ import dt.util.J9Shorthand;
 public class DbService 
 {
 	private final DumpDBRepo db;
-	public DbService() throws IOException, ParseException
+	public DbService(InitListener initlistener) throws IOException, ParseException
 	{
-		db = new DumpDBRepo();
+		db = new DumpDBRepo(initlistener);
 	}
 
 	public ExhaustiveChineseLookup lookupChinese(String chinese, boolean shouldSave) throws ExceptionPile

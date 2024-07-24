@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 import dt.jdictionary.ChineseSummaryLookup;
+import dt.jdictionary.InitListener;
 import dt.jdictionary.dumpdb.line.DictionaryLine;
 import dt.jdictionary.dumpdb.line.MeasureWordLine;
 import dt.jdictionary.dumpdb.line.PastHit;
@@ -29,7 +30,8 @@ import dt.util.MapUtil;
 
 public class DumpDBRepo
 {
-
+	public static final String LOADED_ALL_DUMPS = "LOADED_ALL_DUMPS";
+	
 	private static final String DUMP_PREFIX = System.getProperty("user.home") + "/Programs/JDictionary/";
 	private static final String DUMP_ENGLISH = DUMP_PREFIX + "dump_english";
 	private static final String DUMP_CHINESE = DUMP_PREFIX + "dump_chinese";
@@ -57,7 +59,7 @@ public class DumpDBRepo
 	
 	private final PrintWriter pastHitsWriter;
 	
-	public DumpDBRepo() throws IOException, ParseException
+	public DumpDBRepo(InitListener initListener) throws IOException, ParseException
 	{
 		final List<String> dumpFiles = J9Shorthand.list(DUMP_CHINESE, DUMP_ENGLISH, DUMP_MEASURE, DUMP_PAST, DUMP_SIMPLIFIED, DUMP_SUBSTRING);
 		for(final String dump : dumpFiles)
@@ -68,18 +70,28 @@ public class DumpDBRepo
 		}
 		
 		pastHitsWriter = new PrintWriter(new FileWriter(DUMP_PAST, true));
-		loadIndices();
-		loadKeyListOfValues(DUMP_ENGLISH, englishMap);
-		loadKeyListOfValues(DUMP_SUBSTRING, substringMap);
-		loadKeyListOfValues(DUMP_MEASURE, measureMap);
-		loadSimplified();
-		loadPastHits();
+		loadIndices(initListener);
+		loadKeyListOfValues(DUMP_ENGLISH, englishMap, initListener);
+		loadKeyListOfValues(DUMP_SUBSTRING, substringMap, initListener);
+		loadKeyListOfValues(DUMP_MEASURE, measureMap, initListener);
+		loadSimplified(initListener);
+		loadPastHits(initListener);
+		initListener.onProgress(LOADED_ALL_DUMPS, 100);
 	}
 	
-	private void loadIndices() throws IOException
+	private void initListenerWrapper(InitListener initListener, String desc, int amount)
+	{
+		if(initListener != null && amount % 1000 == 0) // printing every update dramatically slows down the loading time
+		{
+			initListener.onProgress(desc, amount);
+		}
+	}
+	
+	private void loadIndices(InitListener initListener) throws IOException
 	{
 		final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(DUMP_CHINESE), StandardCharsets.UTF_8));
 		String line = reader.readLine();
+		int linesParsed = 0;
 		while(line != null)
 		{
 			final String[] parts = line.split(DELIM);
@@ -96,45 +108,58 @@ public class DumpDBRepo
 			MapUtil.addToListMap(indexByPinyinNorm, row.getPinyinNormalized(), row);
 			MapUtil.addToListMap(indexByFirstChar, row.getFirstChar(), row);
 			MapUtil.addToListMap(indexByLastChar, row.getLastChar(), row);
+			linesParsed++;
+			initListenerWrapper(initListener, "Load Dictionary Indicies", linesParsed);
 			line = reader.readLine();
 		}
 		reader.close();
 	}
 	
-	private void loadSimplified() throws IOException
+	private void loadSimplified(InitListener initListener) throws IOException
 	{
 		final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(DUMP_SIMPLIFIED), StandardCharsets.UTF_8));
 		String line = reader.readLine();
+		int linesParsed = 0;
 		while(line != null)
 		{
 			final String[] parts = line.split(DELIM);
 			simplifiedMap.put(parts[0], parts[1]);
+			linesParsed++;
+			initListenerWrapper(initListener, "Parsed simplified", linesParsed);
 			line = reader.readLine();
 		}
 		reader.close();
 	}
 	
-	private void loadKeyListOfValues(String dumpFile, Map<String, List<String>> target) throws IOException
+	private void loadKeyListOfValues(String dumpFile, Map<String, List<String>> target, InitListener initListener) throws IOException
 	{
 		final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(dumpFile), StandardCharsets.UTF_8));
 		String line = reader.readLine();
+		int linesParsed = 0;
+		final String[] filePath = dumpFile.split("/");
+		final String fileName = filePath[filePath.length-1];
 		while(line != null)
 		{
 			final String[] parts = line.split(DELIM);
 			MapUtil.addToListMap(target, parts[0], parts[1]);
+			linesParsed++;
+			initListenerWrapper(initListener, "Parsing file " + fileName, linesParsed);
 			line = reader.readLine();
 		}
 		reader.close();
 	}
 	
-	private void loadPastHits() throws IOException, ParseException
+	private void loadPastHits(InitListener initListener) throws IOException, ParseException
 	{
 		final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(DUMP_PAST), StandardCharsets.UTF_8));
 		String line = reader.readLine();
+		int linesParsed = 0;
 		while(line != null)
 		{
 			final String[] parts = line.split(DELIM);
 			MapUtil.addToListMap(pastHitsMap, parts[0], dateFormatter.parse(parts[1]));
+			linesParsed++;
+			initListenerWrapper(initListener, "Parsing past hits", linesParsed);
 			line = reader.readLine();
 		}
 		reader.close();
@@ -272,7 +297,7 @@ public class DumpDBRepo
 		}
 		chineseDumpWriter.close();
 		
-		loadIndices();
+		loadIndices(null);
 	}
 	
 	public void fillEnglishMap(Map<String, List<String>> enToPossibleChinese, DbFillListener fillListener) throws IOException
@@ -290,7 +315,7 @@ public class DumpDBRepo
 			}
 		}
 		englishDumpWriter.close();
-		loadKeyListOfValues(DUMP_ENGLISH, englishMap);
+		loadKeyListOfValues(DUMP_ENGLISH, englishMap, null);
 	}
 
 
@@ -305,7 +330,7 @@ public class DumpDBRepo
 			fillListener.onDiskWrite(DumpFile.MEASURE_WORDS, writes);
 		}
 		measureWriter.close();		
-		loadKeyListOfValues(DUMP_MEASURE, measureMap);
+		loadKeyListOfValues(DUMP_MEASURE, measureMap, null);
 	}
 
 	public void fillSimplified(List<SimplifiedLine> allRows, DbFillListener fillListener) throws IOException
@@ -319,7 +344,7 @@ public class DumpDBRepo
 			fillListener.onDiskWrite(DumpFile.SIMPLIFIED, writes);
 		}
 		simplifiedWriter.close();			
-		loadSimplified();
+		loadSimplified(null);
 	}
 
 	public void fillSubstrings(List<SubstringLine> allRows, DbFillListener fillListener) throws IOException
@@ -333,6 +358,6 @@ public class DumpDBRepo
 			fillListener.onDiskWrite(DumpFile.SUBSTRING, writes);
 		}
 		simplifiedWriter.close();		
-		loadKeyListOfValues(DUMP_SUBSTRING, substringMap);
+		loadKeyListOfValues(DUMP_SUBSTRING, substringMap, null);
 	}
 }
