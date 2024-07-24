@@ -25,6 +25,8 @@ import dt.util.MapUtil;
 
 public class SaveCedict implements DbFillListener
 {
+	private static final String PROGRESS_DESC = "Saving to disk";
+	
 	private final DumpDBRepo db;
 	private final List<ChineseSummaryLookup> dictionary;
 	private final Map<String, List<String>> englishDefinitionWordToChinese;
@@ -59,7 +61,7 @@ public class SaveCedict implements DbFillListener
 		if(this.dictionary.size() == 0)
 		{
 			Debug.logTimestamp("Empty dump. Don't wipe!");
-			this.externalListener.onProgress(1, 1);
+			this.externalListener.onProgress(PROGRESS_DESC, 1, 1);
 			return;
 		}
 				
@@ -160,6 +162,6 @@ public class SaveCedict implements DbFillListener
 			default:
 				break;
 		}
-		this.externalListener.onProgress(previousWrites + writes, totalExpectedWrites);
+		this.externalListener.onProgress(PROGRESS_DESC, previousWrites + writes, totalExpectedWrites);
 	}
 }
