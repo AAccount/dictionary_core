@@ -2,5 +2,5 @@ package dt.jdictionary;
 
 public interface InitListener
 {
-	public void onProgress(String description, int amount);
+	public void onAnyProgress(String description, int amount);
 }

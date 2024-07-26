@@ -39,7 +39,7 @@ public class WordList
 					hashSet.add(cleaned);
 				}
 				bytesProcessed = bytesProcessed + line.length();
-				this.progressListener.onProgress("Parsing word list", bytesProcessed, file.length());
+				this.progressListener.onFractionalProgress("Parsing word list", bytesProcessed, file.length());
 				line = fileReader.readLine();
 			}
 			fileReader.close();

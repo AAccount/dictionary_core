@@ -44,7 +44,7 @@ public class WordBlob
 			}
 
 			bytesProcessed = bytesProcessed + line.length();
-			this.progressListener.onProgress("Parsing text blob", bytesProcessed, file.length());
+			this.progressListener.onFractionalProgress("Parsing text blob", bytesProcessed, file.length());
 			line = fileReader.readLine();
 		}
 		fileReader.close();

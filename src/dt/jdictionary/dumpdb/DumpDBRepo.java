@@ -76,14 +76,14 @@ public class DumpDBRepo
 		loadKeyListOfValues(DUMP_MEASURE, measureMap, initListener);
 		loadSimplified(initListener);
 		loadPastHits(initListener);
-		initListener.onProgress(LOADED_ALL_DUMPS, 100);
+		initListener.onAnyProgress(LOADED_ALL_DUMPS, 100);
 	}
 	
 	private void initListenerWrapper(InitListener initListener, String desc, int amount)
 	{
 		if(initListener != null && amount % 1000 == 0) // printing every update dramatically slows down the loading time
 		{
-			initListener.onProgress(desc, amount);
+			initListener.onAnyProgress(desc, amount);
 		}
 	}
 	

@@ -61,7 +61,7 @@ public class SaveCedict implements DbFillListener
 		if(this.dictionary.size() == 0)
 		{
 			Debug.logTimestamp("Empty dump. Don't wipe!");
-			this.externalListener.onProgress(PROGRESS_DESC, 1, 1);
+			this.externalListener.onFractionalProgress(PROGRESS_DESC, 1, 1);
 			return;
 		}
 				
@@ -162,6 +162,6 @@ public class SaveCedict implements DbFillListener
 			default:
 				break;
 		}
-		this.externalListener.onProgress(PROGRESS_DESC, previousWrites + writes, totalExpectedWrites);
+		this.externalListener.onFractionalProgress(PROGRESS_DESC, previousWrites + writes, totalExpectedWrites);
 	}
 }
