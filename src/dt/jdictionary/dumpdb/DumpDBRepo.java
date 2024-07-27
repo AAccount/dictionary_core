@@ -107,7 +107,7 @@ public class DumpDBRepo
 			final double rank = Double.parseDouble(parts[6]);
 			
 			final DictionaryLine row = new DictionaryLine(this.masterStringsWrapper(chinese), this.masterStringsWrapper(pinyin), def, rank);
-			MapUtil.addToListMap(indexByChinese, this.masterStringsWrapper(this.masterStringsWrapper(chinese)), row);
+			MapUtil.addToListMap(indexByChinese, this.masterStringsWrapper(chinese), row);
 			MapUtil.addToListMap(indexByPinyinNorm, this.masterStringsWrapper(pinyinNormalized), row);
 			
 			final List<String> trueChars = ChineseText.trueChars(chinese);
