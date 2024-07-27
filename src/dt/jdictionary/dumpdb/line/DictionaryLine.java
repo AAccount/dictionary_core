@@ -1,37 +1,19 @@
 package dt.jdictionary.dumpdb.line;
 
-import java.util.List;
-
-import dt.util.ChineseText;
-
 public class DictionaryLine 
 {
 	private final String zh;
 	private final String pinyin;
 	private final String definition;
-//	private final String firstChar;
-//	private final String lastChar;
 	private final double rank;
 
-//	public DictionaryLine(String zh, String pinyin, double rank) 
-//	{
-//		this.zh = zh;
-//		this.pinyin = pinyin;
-//		this.pinyinNormalized = ChineseText.normalizePinyin(pinyin);
-//		this.definition = null;
-//		this.rank = rank;
-//		final List<String> trueChars = ChineseText.trueChars(zh);
-//		this.firstChar = trueChars.size() > 1 ? trueChars.get(0) : null;
-//		this.lastChar = trueChars.size() > 1 ? trueChars.get(trueChars.size()-1) : null;
-//	}
+
 
 	public DictionaryLine(String zh, String pinyin, String singleDefinition, double rank) 
 	{
 		this.zh = zh;
 		this.pinyin = pinyin;
 		this.definition = singleDefinition;
-//		this.firstChar = firstChar;
-//		this.lastChar = lastChar;
 		this.rank = rank;
 	}
 	
@@ -49,29 +31,12 @@ public class DictionaryLine
 	{
 		return definition;
 	}
-	
-	public String getFirstChar() 
-	{
-		final List<String> trueChars = ChineseText.trueChars(this.zh);
-		return trueChars.size() > 1 ? ChineseText.trueChars(this.zh).get(0) : null;
-	}
-
-	public String getLastChar() 
-	{
-		final List<String> trueChars = ChineseText.trueChars(this.zh);
-		return trueChars.size() > 1 ? trueChars.get(trueChars.size()-1) : null;
-	}
-
-	public String getPinyinNormalized() 
-	{
-		return ChineseText.normalizePinyin(this.pinyin);
-	}
 
 	public double getRank()
 	{
 		return rank;
 	}
-
+	
 	@Override
 	public int hashCode()
 	{

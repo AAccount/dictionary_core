@@ -14,10 +14,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import dt.jdictionary.ChineseSummaryLookup;
 import dt.jdictionary.InitListener;
@@ -28,6 +26,7 @@ import dt.jdictionary.dumpdb.line.SimplifiedLine;
 import dt.jdictionary.dumpdb.line.SubstringLine;
 import dt.util.ChineseText;
 import dt.util.J9Shorthand;
+import dt.util.ListUtils;
 import dt.util.MapUtil;
 
 public class DumpDBRepo
@@ -101,19 +100,22 @@ public class DumpDBRepo
 		while(line != null)
 		{
 			final String[] parts = line.split(DELIM);
-			final DictionaryLine row = new DictionaryLine(
-					this.masterStringsWrapper(parts[0]), 
-					this.masterStringsWrapper(parts[1]), 
-//					parts[2], 
-					parts[3].replace(DELIM_ESC, DELIM), 
-//					parts[4].equals(NULL) ? null : parts[4], 
-//					parts[5].equals(NULL) ? null : parts[5], 
-					Double.parseDouble(parts[6])
-			);
-			MapUtil.addToListMap(indexByChinese, this.masterStringsWrapper(row.getZh()), row);
-			MapUtil.addToListMap(indexByPinyinNorm, this.masterStringsWrapper(row.getPinyinNormalized()), row);
-			MapUtil.addToListMap(indexByFirstChar, this.masterStringsWrapper(row.getFirstChar()), row);
-			MapUtil.addToListMap(indexByLastChar, this.masterStringsWrapper(row.getLastChar()), row);
+			final String chinese = parts[0];
+			final String pinyin = parts[1];
+			final String pinyinNormalized = parts[2];
+			final String def = parts[3].replace(DELIM_ESC, DELIM);
+			final double rank = Double.parseDouble(parts[6]);
+			
+			final DictionaryLine row = new DictionaryLine(this.masterStringsWrapper(chinese), this.masterStringsWrapper(pinyin), def, rank);
+			MapUtil.addToListMap(indexByChinese, this.masterStringsWrapper(this.masterStringsWrapper(chinese)), row);
+			MapUtil.addToListMap(indexByPinyinNorm, this.masterStringsWrapper(pinyinNormalized), row);
+			
+			final List<String> trueChars = ChineseText.trueChars(chinese);
+			if(trueChars.size() > 1)
+			{
+				MapUtil.addToListMap(indexByFirstChar, this.masterStringsWrapper(trueChars.get(0)), row);
+				MapUtil.addToListMap(indexByLastChar, this.masterStringsWrapper(ListUtils.last(trueChars)), row);
+			}
 			linesParsed++;
 			initListenerWrapper(initListener, "Load Dictionary Indicies", linesParsed);
 			line = reader.readLine();
