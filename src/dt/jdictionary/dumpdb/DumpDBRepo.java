@@ -14,8 +14,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import dt.jdictionary.ChineseSummaryLookup;
 import dt.jdictionary.InitListener;
@@ -46,6 +48,10 @@ public class DumpDBRepo
 	
 	private static final DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSS");
 	
+	// This strategy produces piles upon piles of strings which each require a pointer and actual memory for the string.
+	// Attempt to keep a master set of strings to avoid gratuitous duplicates. Example: 10 "我" strings.
+	// If a string is not in the master pool, it will be added. If it is, the master pool version will be used and the "original" GCed.
+	private final Map<String, String> masterStringPool = new HashMap<>();
 	private final Map<String, List<DictionaryLine>> indexByChinese = new HashMap<>();
 	private final Map<String, List<DictionaryLine>> indexByPinyinNorm = new HashMap<>();
 	private final Map<String, List<DictionaryLine>> indexByFirstChar = new HashMap<>();
@@ -96,23 +102,32 @@ public class DumpDBRepo
 		{
 			final String[] parts = line.split(DELIM);
 			final DictionaryLine row = new DictionaryLine(
-					parts[0], 
-					parts[1], 
-					parts[2], 
+					this.masterStringsWrapper(parts[0]), 
+					this.masterStringsWrapper(parts[1]), 
+//					parts[2], 
 					parts[3].replace(DELIM_ESC, DELIM), 
-					parts[4].equals(NULL) ? null : parts[4], 
-					parts[5].equals(NULL) ? null : parts[5], 
+//					parts[4].equals(NULL) ? null : parts[4], 
+//					parts[5].equals(NULL) ? null : parts[5], 
 					Double.parseDouble(parts[6])
 			);
-			MapUtil.addToListMap(indexByChinese, row.getZh(), row);
-			MapUtil.addToListMap(indexByPinyinNorm, row.getPinyinNormalized(), row);
-			MapUtil.addToListMap(indexByFirstChar, row.getFirstChar(), row);
-			MapUtil.addToListMap(indexByLastChar, row.getLastChar(), row);
+			MapUtil.addToListMap(indexByChinese, this.masterStringsWrapper(row.getZh()), row);
+			MapUtil.addToListMap(indexByPinyinNorm, this.masterStringsWrapper(row.getPinyinNormalized()), row);
+			MapUtil.addToListMap(indexByFirstChar, this.masterStringsWrapper(row.getFirstChar()), row);
+			MapUtil.addToListMap(indexByLastChar, this.masterStringsWrapper(row.getLastChar()), row);
 			linesParsed++;
 			initListenerWrapper(initListener, "Load Dictionary Indicies", linesParsed);
 			line = reader.readLine();
 		}
 		reader.close();
+	}
+	
+	private String masterStringsWrapper(String target)
+	{
+		if(!this.masterStringPool.containsKey(target))
+		{
+			masterStringPool.put(target, target);
+		}
+		return masterStringPool.get(target);
 	}
 	
 	private void loadSimplified(InitListener initListener) throws IOException
@@ -123,7 +138,7 @@ public class DumpDBRepo
 		while(line != null)
 		{
 			final String[] parts = line.split(DELIM);
-			simplifiedMap.put(parts[0], parts[1]);
+			simplifiedMap.put(this.masterStringsWrapper(parts[0]), this.masterStringsWrapper(parts[1]));
 			linesParsed++;
 			initListenerWrapper(initListener, "Parsed simplified", linesParsed);
 			line = reader.readLine();
@@ -141,7 +156,7 @@ public class DumpDBRepo
 		while(line != null)
 		{
 			final String[] parts = line.split(DELIM);
-			MapUtil.addToListMap(target, parts[0], parts[1]);
+			MapUtil.addToListMap(target, this.masterStringsWrapper(parts[0]), this.masterStringsWrapper(parts[1]));
 			linesParsed++;
 			initListenerWrapper(initListener, "Parsing file " + fileName, linesParsed);
 			line = reader.readLine();
@@ -157,7 +172,7 @@ public class DumpDBRepo
 		while(line != null)
 		{
 			final String[] parts = line.split(DELIM);
-			MapUtil.addToListMap(pastHitsMap, parts[0], dateFormatter.parse(parts[1]));
+			MapUtil.addToListMap(pastHitsMap, this.masterStringsWrapper(parts[0]), dateFormatter.parse(parts[1]));
 			linesParsed++;
 			initListenerWrapper(initListener, "Parsing past hits", linesParsed);
 			line = reader.readLine();
@@ -185,7 +200,7 @@ public class DumpDBRepo
 			final Date now = new Date();
 			pastHitsWriter.println(String.format("%s%s%s", hit, DELIM, dateFormatter.format(now)));
 			pastHitsWriter.flush();
-			MapUtil.addToListMap(pastHitsMap, hit, now);
+			MapUtil.addToListMap(pastHitsMap, this.masterStringsWrapper(hit), now);
 		}
 	}
 
@@ -234,7 +249,7 @@ public class DumpDBRepo
 				zhSimplified = zhSimplified + singleSimplified;
 			}
 		}
-		simplifiedCache.put(zh, zhSimplified);
+		simplifiedCache.put(this.masterStringsWrapper(zh), this.masterStringsWrapper(zhSimplified));
 		return zhSimplified;
 	}
 
