@@ -82,6 +82,9 @@ public class DumpDBRepo
 		loadSimplified(initListener);
 		loadPastHits(initListener);
 		initListener.onAnyProgress(LOADED_ALL_DUMPS, 100);
+		
+		// The main string dedup has been done. Clear the giant 450000 entry hash map.
+		masterStringPool.clear();
 	}
 	
 	private void initListenerWrapper(InitListener initListener, String desc, int amount)
@@ -125,6 +128,7 @@ public class DumpDBRepo
 	
 	private String masterStringsWrapper(String target)
 	{
+
 		if(!this.masterStringPool.containsKey(target))
 		{
 			masterStringPool.put(target, target);
@@ -203,6 +207,7 @@ public class DumpDBRepo
 			pastHitsWriter.println(String.format("%s%s%s", hit, DELIM, dateFormatter.format(now)));
 			pastHitsWriter.flush();
 			MapUtil.addToListMap(pastHitsMap, this.masterStringsWrapper(hit), now);
+//			MapUtil.addToListMap(pastHitsMap, hit, now);
 		}
 	}
 
@@ -252,6 +257,7 @@ public class DumpDBRepo
 			}
 		}
 		simplifiedCache.put(this.masterStringsWrapper(zh), this.masterStringsWrapper(zhSimplified));
+//		simplifiedCache.put(zh, zhSimplified);
 		return zhSimplified;
 	}
 
