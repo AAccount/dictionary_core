@@ -1,6 +1,7 @@
 package dt.jdictionary.dbservice;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -56,7 +57,7 @@ public class SaveCedict implements DbFillListener
 				substringLines.size();
 	}
 	
-	public void save() throws IOException
+	public void save() throws IOException, ParseException
 	{
 		if(this.dictionary.size() == 0)
 		{
@@ -71,6 +72,7 @@ public class SaveCedict implements DbFillListener
 		db.fillMeasureWords(measureWordLines, this);
 		db.fillSimplified(simplifiedLines, this);
 		db.fillSubstrings(substringLines, this);
+		db.loadAll(null);
 	}
 
 	private List<SubstringLine> fillSubstrings(List<ChineseSummaryLookup> dictionary)

@@ -74,13 +74,18 @@ public class DumpDBRepo
 		}
 		
 		this.pastHitsWriter = new PrintWriter(new FileWriter(DUMP_PAST, true));
-		loadIndices(initListener);
-		loadKeyListOfValues(DUMP_ENGLISH, englishMap, initListener);
-		loadKeyListOfValues(DUMP_SUBSTRING, substringMap, initListener);
-		loadKeyListOfValues(DUMP_MEASURE, measureMap, initListener);
-		loadSimplified(initListener);
-		loadPastHits(initListener);
-		initListener.onAnyProgress(LOADED_ALL_DUMPS, 100);
+		this.loadAll(initListener);
+	}
+
+	public void loadAll(InitListener initListener) throws IOException, ParseException
+	{
+		this.loadIndices(initListener);
+		this.loadKeyListOfValues(DUMP_ENGLISH, englishMap, initListener);
+		this.loadKeyListOfValues(DUMP_SUBSTRING, substringMap, initListener);
+		this.loadKeyListOfValues(DUMP_MEASURE, measureMap, initListener);
+		this.loadSimplified(initListener);
+		this.loadPastHits(initListener);
+		this.initListenerWrapper(initListener, LOADED_ALL_DUMPS, 100);
 		
 		// The main string dedup has been done. Clear the giant 450000 entry hash map.
 		this.masterStringPool.clear();
@@ -88,7 +93,7 @@ public class DumpDBRepo
 	
 	private void initListenerWrapper(InitListener initListener, String desc, int amount)
 	{
-		if(initListener != null && amount % 1000 == 0) // printing every update dramatically slows down the loading time
+		if(initListener != null && (amount % 1000 == 0 || desc.equals(LOADED_ALL_DUMPS))) // printing every update dramatically slows down the loading time
 		{
 			initListener.onAnyProgress(desc, amount);
 		}
@@ -315,8 +320,6 @@ public class DumpDBRepo
 			fillListener.onDiskWrite(DumpFile.CHINESE, writes);
 		}
 		chineseDumpWriter.close();
-		
-		loadIndices(null);
 	}
 	
 	public void fillEnglishMap(Map<String, List<String>> enToPossibleChinese, DbFillListener fillListener) throws IOException
@@ -334,7 +337,6 @@ public class DumpDBRepo
 			}
 		}
 		englishDumpWriter.close();
-		loadKeyListOfValues(DUMP_ENGLISH, englishMap, null);
 	}
 
 
@@ -349,7 +351,6 @@ public class DumpDBRepo
 			fillListener.onDiskWrite(DumpFile.MEASURE_WORDS, writes);
 		}
 		measureWriter.close();		
-		loadKeyListOfValues(DUMP_MEASURE, measureMap, null);
 	}
 
 	public void fillSimplified(List<SimplifiedLine> allRows, DbFillListener fillListener) throws IOException
@@ -363,7 +364,6 @@ public class DumpDBRepo
 			fillListener.onDiskWrite(DumpFile.SIMPLIFIED, writes);
 		}
 		simplifiedWriter.close();			
-		loadSimplified(null);
 	}
 
 	public void fillSubstrings(List<SubstringLine> allRows, DbFillListener fillListener) throws IOException
@@ -377,6 +377,5 @@ public class DumpDBRepo
 			fillListener.onDiskWrite(DumpFile.SUBSTRING, writes);
 		}
 		simplifiedWriter.close();		
-		loadKeyListOfValues(DUMP_SUBSTRING, this.substringMap, null);
 	}
 }
