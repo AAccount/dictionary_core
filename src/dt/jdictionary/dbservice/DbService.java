@@ -145,6 +145,7 @@ public class DbService
 		catch(Exception e)
 		{
 			pile.add(e);
+			e.printStackTrace();
 			return new ChineseDefinitionLookup(zh, new HashMap<>(), "", new ArrayList<>());
 		}
 	}

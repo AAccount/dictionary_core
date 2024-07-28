@@ -12,6 +12,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -50,16 +51,24 @@ public class DumpDBRepo
 	// Attempt to keep a master set of strings to avoid gratuitous duplicates. Example: 10 "我" strings.
 	// If a string is not in the master pool, it will be added. If it is, the master pool version will be used and the "original" GCed.
 	private final Map<String, String> masterStringPool = new HashMap<>();
-	private final Map<String, List<DictionaryLine>> indexByChinese = new HashMap<>();
-	private final Map<String, List<DictionaryLine>> indexByPinyinNorm = new HashMap<>();
-	private final Map<String, List<DictionaryLine>> indexByFirstChar = new HashMap<>();
-	private final Map<String, List<DictionaryLine>> indexByLastChar = new HashMap<>();
+	private final Map<String, List<DictionaryLine>> indexByChineseRw = new HashMap<>();
+	private final Map<String, List<DictionaryLine>> indexByPinyinNormRw = new HashMap<>();
+	private final Map<String, List<DictionaryLine>> indexByFirstCharRw = new HashMap<>();
+	private final Map<String, List<DictionaryLine>> indexByLastCharRw = new HashMap<>();
 	private final Map<String, String> simplifiedMap = new HashMap<>();
-	private final Map<String, List<String>> substringMap = new HashMap<>();
-	private final Map<String, List<String>> measureMap = new HashMap<>();
-	private final Map<String, List<String>> englishMap = new HashMap<>();
+	private final Map<String, List<String>> substringMapRw = new HashMap<>();
+	private final Map<String, List<String>> measureMapRw = new HashMap<>();
+	private final Map<String, List<String>> englishMapRw = new HashMap<>();
 	private final Map<String, Integer> pastHitsMap = new HashMap<>();
 	private final Map<String, String> simplifiedCache = new HashMap<>();
+	
+	private final Map<String, DictionaryLine[]> indexByChineseRo = new HashMap<>();
+	private final Map<String, DictionaryLine[]> indexByPinyinNormRo = new HashMap<>();
+	private final Map<String, DictionaryLine[]> indexByFirstCharRo = new HashMap<>();
+	private final Map<String, DictionaryLine[]> indexByLastCharRo = new HashMap<>();
+	private final Map<String, String[]> substringMapRo = new HashMap<>();
+	private final Map<String, String[]> measureMapRo = new HashMap<>();
+	private final Map<String, String[]> englishMapRo = new HashMap<>();
 	
 	private final PrintWriter pastHitsWriter;
 	
@@ -80,15 +89,52 @@ public class DumpDBRepo
 	public void loadAll(InitListener initListener) throws IOException, ParseException
 	{
 		this.loadIndices(initListener);
-		this.loadKeyListOfValues(DUMP_ENGLISH, englishMap, initListener);
-		this.loadKeyListOfValues(DUMP_SUBSTRING, substringMap, initListener);
-		this.loadKeyListOfValues(DUMP_MEASURE, measureMap, initListener);
+		this.createRoDicitionaryLine(this.indexByChineseRw, this.indexByChineseRo);
+		this.createRoDicitionaryLine(this.indexByPinyinNormRw, this.indexByPinyinNormRo);
+		this.createRoDicitionaryLine(this.indexByFirstCharRw, this.indexByFirstCharRo);
+		this.createRoDicitionaryLine(this.indexByLastCharRw, this.indexByLastCharRo);
+		this.loadKeyListOfValues(DUMP_ENGLISH, englishMapRw, initListener);
+		this.createRoString(this.englishMapRw, this.englishMapRo);
+		this.loadKeyListOfValues(DUMP_SUBSTRING, substringMapRw, initListener);
+		this.createRoString(this.substringMapRw, this.substringMapRo);
+		this.loadKeyListOfValues(DUMP_MEASURE, measureMapRw, initListener);
+		this.createRoString(this.measureMapRw, this.measureMapRo);
 		this.loadSimplified(initListener);
 		this.loadPastHits(initListener);
 		this.initListenerWrapper(initListener, LOADED_ALL_DUMPS, 100);
 		
 		// The main string dedup has been done. Clear the giant 450000 entry hash map.
 		this.masterStringPool.clear();
+		J9Shorthand.list(this.indexByChineseRw, this.indexByFirstCharRw, this.indexByLastCharRw, this.indexByPinyinNormRw, this.englishMapRw, this.substringMapRw, this.measureMapRw).forEach(Map::clear);
+	}
+	
+	private void createRoDicitionaryLine(Map<String, List<DictionaryLine>> rwmap, Map<String, DictionaryLine[]> romap)
+	{
+		for(final String key : rwmap.keySet())
+		{
+			final List<DictionaryLine> list = rwmap.get(key);
+			final DictionaryLine[] array = new DictionaryLine[list.size()];
+			for(int i=0; i<list.size(); i++)
+			{
+				array[i] = list.get(i);
+			}
+			romap.put(key, array);
+		}
+		rwmap.clear();
+	}
+	
+	private void createRoString(Map<String, List<String>> rwmap, Map<String, String[]> romap)
+	{
+		for(final String key : rwmap.keySet())
+		{
+			final List<String> list = rwmap.get(key);
+			final String[] array = new String[list.size()];
+			for(int i=0; i<list.size(); i++)
+			{
+				array[i] = list.get(i);
+			}
+			romap.put(key, array);		}
+		rwmap.clear();
 	}
 	
 	private void initListenerWrapper(InitListener initListener, String desc, int amount)
@@ -114,14 +160,14 @@ public class DumpDBRepo
 			final double rank = Double.parseDouble(parts[6]);
 			
 			final DictionaryLine row = new DictionaryLine(this.masterStringsWrapper(chinese), this.masterStringsWrapper(pinyin), def, rank);
-			MapUtil.addToListMap(this.indexByChinese, this.masterStringsWrapper(chinese), row);
-			MapUtil.addToListMap(this.indexByPinyinNorm, this.masterStringsWrapper(pinyinNormalized), row);
+			MapUtil.addToListMap(this.indexByChineseRw, this.masterStringsWrapper(chinese), row);
+			MapUtil.addToListMap(this.indexByPinyinNormRw, this.masterStringsWrapper(pinyinNormalized), row);
 			
 			final List<String> trueChars = ChineseText.trueChars(chinese);
 			if(trueChars.size() > 1)
 			{
-				MapUtil.addToListMap(this.indexByFirstChar, this.masterStringsWrapper(trueChars.get(0)), row);
-				MapUtil.addToListMap(this.indexByLastChar, this.masterStringsWrapper(ListUtils.last(trueChars)), row);
+				MapUtil.addToListMap(this.indexByFirstCharRw, this.masterStringsWrapper(trueChars.get(0)), row);
+				MapUtil.addToListMap(this.indexByLastCharRw, this.masterStringsWrapper(ListUtils.last(trueChars)), row);
 			}
 			linesParsed++;
 			initListenerWrapper(initListener, "Load Dictionary Indicies", linesParsed);
@@ -200,7 +246,7 @@ public class DumpDBRepo
 			wipable.createNewFile();
 		}
 		
-		J9Shorthand.list(indexByChinese, indexByPinyinNorm, indexByFirstChar, indexByLastChar, simplifiedMap, substringMap, englishMap, simplifiedCache).forEach(Map::clear);
+		J9Shorthand.list(indexByChineseRo, indexByPinyinNormRo, indexByFirstCharRo, indexByLastCharRo, simplifiedMap, substringMapRo, englishMapRo, simplifiedCache).forEach(Map::clear);
 	}
 
 	public void saveHits(List<String> hits)
@@ -232,7 +278,8 @@ public class DumpDBRepo
 		final List<DictionaryLine> result = new ArrayList<>();
 		for(final String zhString : zhStrings)
 		{
-			result.addAll(this.indexByChinese.getOrDefault(zhString, new ArrayList<>()));
+			final DictionaryLine[] stringResult = this.indexByChineseRo.getOrDefault(zhString, new DictionaryLine[] {});
+			result.addAll(Arrays.asList(stringResult));
 		}
 		return result;
 	}
@@ -264,28 +311,30 @@ public class DumpDBRepo
 
 	public List<String> lookupMeasureWords(String zh)
 	{
-		return this.measureMap.getOrDefault(zh, new ArrayList<>());
+		return Arrays.asList(this.measureMapRo.getOrDefault(zh, new String[] {}));
 	}
 
 	public List<DictionaryLine> lookupRelatedWord(String zh, RelatedChar similarity)
 	{
-		return  similarity == RelatedChar.SAME_FRONT ? this.indexByFirstChar.getOrDefault(zh, new ArrayList<>()) : this.indexByLastChar.getOrDefault(zh, new ArrayList<>());
+		return  similarity == RelatedChar.SAME_FRONT ? 
+				Arrays.asList(this.indexByFirstCharRo.getOrDefault(zh, new DictionaryLine[] {})):
+				Arrays.asList(this.indexByLastCharRo.getOrDefault(zh, new DictionaryLine[] {}));
 	}
 
 	public List<DictionaryLine> lookupEnglish(String en)
 	{
-		final List<String> chineseMatches = englishMap.get(en);
+		final String[] chineseMatches = englishMapRo.get(en);
 		final List<DictionaryLine> result = new ArrayList<>();
 		for(final String match : chineseMatches)
 		{
-			result.addAll(this.indexByChinese.getOrDefault(match, new ArrayList<>()));
+			result.addAll(Arrays.asList(this.indexByChineseRo.getOrDefault(match, new DictionaryLine[] {})));
 		}
 		return result;
 	}
 
 	public List<String> trySubstring(String compoundWord)
 	{
-		return this.substringMap.getOrDefault(compoundWord, new ArrayList<>());
+		return Arrays.asList(this.substringMapRo.getOrDefault(compoundWord, new String[] {}));
 	}
 
 	public List<DictionaryLine> findByNormalizedPinyin(List<String> normalizedPinyins)
@@ -293,7 +342,7 @@ public class DumpDBRepo
 		final List<DictionaryLine> result = new ArrayList<>();
 		for(final String zhString : normalizedPinyins)
 		{
-			result.addAll(this.indexByPinyinNorm.getOrDefault(zhString, new ArrayList<>()));
+			result.addAll(Arrays.asList(this.indexByPinyinNormRo.getOrDefault(zhString, new DictionaryLine[] {})));
 		}
 		return result;	
 	}
