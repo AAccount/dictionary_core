@@ -34,7 +34,6 @@ import dt.jdictionary.dbservice.alternative.TypoSearch;
 import dt.jdictionary.dumpdb.DumpDBRepo;
 import dt.jdictionary.dumpdb.line.DictionaryLine;
 import dt.jdictionary.util.GenerateCombinations;
-import dt.jdictionary.util.PastHitUtils;
 import dt.util.ChineseText;
 import dt.util.Debug;
 import dt.util.J9Shorthand;
@@ -118,7 +117,7 @@ public class DbService
 		}
 		
 		final List<String> candidates = results.stream().map(ChineseSummaryLookup::getChinese).collect(Collectors.toCollection(ArrayList::new));
-		final Map<String, Integer> pastHits = PastHitUtils.countHits(db.lookupPastHits(candidates));
+		final Map<String, Integer> pastHits = db.lookupPastHits(candidates);
 		return DbServiceUtils.rerank(results, pastHits);
 	}
 	
@@ -240,7 +239,7 @@ public class DbService
 	{
 		final List<ChineseSummaryLookup> rawResults =  DbServiceUtils.convertRawToSimple(db.lookupEnglish(singleWord));
 		final List<String> candidates = rawResults.stream().map(ChineseSummaryLookup::getChinese).collect(Collectors.toCollection(ArrayList::new));
-		final Map<String, Integer> pastHits = PastHitUtils.countHits(db.lookupPastHits(candidates));
+		final Map<String, Integer> pastHits = db.lookupPastHits(candidates);
 		return DbServiceUtils.rerank(rawResults, pastHits);
 	}
 

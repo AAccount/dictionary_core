@@ -21,7 +21,6 @@ import dt.jdictionary.ChineseSummaryLookup;
 import dt.jdictionary.InitListener;
 import dt.jdictionary.dumpdb.line.DictionaryLine;
 import dt.jdictionary.dumpdb.line.MeasureWordLine;
-import dt.jdictionary.dumpdb.line.PastHit;
 import dt.jdictionary.dumpdb.line.SimplifiedLine;
 import dt.jdictionary.dumpdb.line.SubstringLine;
 import dt.util.ChineseText;
@@ -59,7 +58,7 @@ public class DumpDBRepo
 	private final Map<String, List<String>> substringMap = new HashMap<>();
 	private final Map<String, List<String>> measureMap = new HashMap<>();
 	private final Map<String, List<String>> englishMap = new HashMap<>();
-	private final Map<String, List<Date>> pastHitsMap = new HashMap<>();
+	private final Map<String, Integer> pastHitsMap = new HashMap<>();
 	private final Map<String, String> simplifiedCache = new HashMap<>();
 	
 	private final PrintWriter pastHitsWriter;
@@ -178,7 +177,7 @@ public class DumpDBRepo
 		while(line != null)
 		{
 			final String[] parts = line.split(DELIM);
-			MapUtil.addToListMap(this.pastHitsMap, this.masterStringsWrapper(parts[0]), dateFormatter.parse(parts[1]));
+			MapUtil.incrementCounterMap(this.pastHitsMap, this.masterStringsWrapper(parts[0]));
 			linesParsed++;
 			initListenerWrapper(initListener, "Parsing past hits", linesParsed);
 			line = reader.readLine();
@@ -206,19 +205,18 @@ public class DumpDBRepo
 			final Date now = new Date();
 			this.pastHitsWriter.println(String.format("%s%s%s", hit, DELIM, dateFormatter.format(now)));
 			this.pastHitsWriter.flush();
-			MapUtil.addToListMap(this.pastHitsMap, this.masterStringsWrapper(hit), now);
+			MapUtil.incrementCounterMap(this.pastHitsMap, this.masterStringsWrapper(hit));
 		}
 	}
 
-	public List<PastHit> lookupPastHits(List<String> candidates) throws ParseException
+	public Map<String, Integer> lookupPastHits(List<String> candidates) throws ParseException
 	{
-		final List<PastHit> result = new ArrayList<>();
+		final Map<String, Integer> result = new HashMap<>();
 		for(final String candidate : candidates)
 		{
-			final List<Date> timestamps = this.pastHitsMap.getOrDefault(candidate, new ArrayList<>());
-			for(final Date timestamp : timestamps)
+			if(pastHitsMap.containsKey(candidate))
 			{
-				result.add(new PastHit(candidate, timestamp));
+				result.put(candidate, pastHitsMap.get(candidate));
 			}
 		}
 		return result;
