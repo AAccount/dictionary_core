@@ -74,7 +74,7 @@ public class DumpDBRepo
 			file.createNewFile();
 		}
 		
-		pastHitsWriter = new PrintWriter(new FileWriter(DUMP_PAST, true));
+		this.pastHitsWriter = new PrintWriter(new FileWriter(DUMP_PAST, true));
 		loadIndices(initListener);
 		loadKeyListOfValues(DUMP_ENGLISH, englishMap, initListener);
 		loadKeyListOfValues(DUMP_SUBSTRING, substringMap, initListener);
@@ -84,7 +84,7 @@ public class DumpDBRepo
 		initListener.onAnyProgress(LOADED_ALL_DUMPS, 100);
 		
 		// The main string dedup has been done. Clear the giant 450000 entry hash map.
-		masterStringPool.clear();
+		this.masterStringPool.clear();
 	}
 	
 	private void initListenerWrapper(InitListener initListener, String desc, int amount)
@@ -110,14 +110,14 @@ public class DumpDBRepo
 			final double rank = Double.parseDouble(parts[6]);
 			
 			final DictionaryLine row = new DictionaryLine(this.masterStringsWrapper(chinese), this.masterStringsWrapper(pinyin), def, rank);
-			MapUtil.addToListMap(indexByChinese, this.masterStringsWrapper(chinese), row);
-			MapUtil.addToListMap(indexByPinyinNorm, this.masterStringsWrapper(pinyinNormalized), row);
+			MapUtil.addToListMap(this.indexByChinese, this.masterStringsWrapper(chinese), row);
+			MapUtil.addToListMap(this.indexByPinyinNorm, this.masterStringsWrapper(pinyinNormalized), row);
 			
 			final List<String> trueChars = ChineseText.trueChars(chinese);
 			if(trueChars.size() > 1)
 			{
-				MapUtil.addToListMap(indexByFirstChar, this.masterStringsWrapper(trueChars.get(0)), row);
-				MapUtil.addToListMap(indexByLastChar, this.masterStringsWrapper(ListUtils.last(trueChars)), row);
+				MapUtil.addToListMap(this.indexByFirstChar, this.masterStringsWrapper(trueChars.get(0)), row);
+				MapUtil.addToListMap(this.indexByLastChar, this.masterStringsWrapper(ListUtils.last(trueChars)), row);
 			}
 			linesParsed++;
 			initListenerWrapper(initListener, "Load Dictionary Indicies", linesParsed);
@@ -131,9 +131,9 @@ public class DumpDBRepo
 
 		if(!this.masterStringPool.containsKey(target))
 		{
-			masterStringPool.put(target, target);
+			this.masterStringPool.put(target, target);
 		}
-		return masterStringPool.get(target);
+		return this.masterStringPool.get(target);
 	}
 	
 	private void loadSimplified(InitListener initListener) throws IOException
@@ -144,7 +144,7 @@ public class DumpDBRepo
 		while(line != null)
 		{
 			final String[] parts = line.split(DELIM);
-			simplifiedMap.put(this.masterStringsWrapper(parts[0]), this.masterStringsWrapper(parts[1]));
+			this.simplifiedMap.put(this.masterStringsWrapper(parts[0]), this.masterStringsWrapper(parts[1]));
 			linesParsed++;
 			initListenerWrapper(initListener, "Parsed simplified", linesParsed);
 			line = reader.readLine();
@@ -178,7 +178,7 @@ public class DumpDBRepo
 		while(line != null)
 		{
 			final String[] parts = line.split(DELIM);
-			MapUtil.addToListMap(pastHitsMap, this.masterStringsWrapper(parts[0]), dateFormatter.parse(parts[1]));
+			MapUtil.addToListMap(this.pastHitsMap, this.masterStringsWrapper(parts[0]), dateFormatter.parse(parts[1]));
 			linesParsed++;
 			initListenerWrapper(initListener, "Parsing past hits", linesParsed);
 			line = reader.readLine();
@@ -204,10 +204,9 @@ public class DumpDBRepo
 		for(final String hit : hits)
 		{
 			final Date now = new Date();
-			pastHitsWriter.println(String.format("%s%s%s", hit, DELIM, dateFormatter.format(now)));
-			pastHitsWriter.flush();
-			MapUtil.addToListMap(pastHitsMap, this.masterStringsWrapper(hit), now);
-//			MapUtil.addToListMap(pastHitsMap, hit, now);
+			this.pastHitsWriter.println(String.format("%s%s%s", hit, DELIM, dateFormatter.format(now)));
+			this.pastHitsWriter.flush();
+			MapUtil.addToListMap(this.pastHitsMap, this.masterStringsWrapper(hit), now);
 		}
 	}
 
@@ -216,7 +215,7 @@ public class DumpDBRepo
 		final List<PastHit> result = new ArrayList<>();
 		for(final String candidate : candidates)
 		{
-			final List<Date> timestamps = pastHitsMap.getOrDefault(candidate, new ArrayList<>());
+			final List<Date> timestamps = this.pastHitsMap.getOrDefault(candidate, new ArrayList<>());
 			for(final Date timestamp : timestamps)
 			{
 				result.add(new PastHit(candidate, timestamp));
@@ -230,23 +229,23 @@ public class DumpDBRepo
 		final List<DictionaryLine> result = new ArrayList<>();
 		for(final String zhString : zhStrings)
 		{
-			result.addAll(indexByChinese.getOrDefault(zhString, new ArrayList<>()));
+			result.addAll(this.indexByChinese.getOrDefault(zhString, new ArrayList<>()));
 		}
 		return result;
 	}
 
 	public String lookupSimplified(String zh)
 	{
-		if(simplifiedCache.containsKey(zh))
+		if(this.simplifiedCache.containsKey(zh))
 		{
-			return simplifiedCache.get(zh);
+			return this.simplifiedCache.get(zh);
 		}
 		
 		String zhSimplified = "";
 		final List<String> chars = ChineseText.trueChars(zh);
 		for(final String singleChar : chars)
 		{
-			final String singleSimplified = simplifiedMap.get(singleChar);
+			final String singleSimplified = this.simplifiedMap.get(singleChar);
 			if(singleSimplified == null)
 			{
 				zhSimplified = zhSimplified + singleChar;
@@ -256,19 +255,18 @@ public class DumpDBRepo
 				zhSimplified = zhSimplified + singleSimplified;
 			}
 		}
-		simplifiedCache.put(this.masterStringsWrapper(zh), this.masterStringsWrapper(zhSimplified));
-//		simplifiedCache.put(zh, zhSimplified);
+		this.simplifiedCache.put(this.masterStringsWrapper(zh), this.masterStringsWrapper(zhSimplified));
 		return zhSimplified;
 	}
 
 	public List<String> lookupMeasureWords(String zh)
 	{
-		return measureMap.getOrDefault(zh, new ArrayList<>());
+		return this.measureMap.getOrDefault(zh, new ArrayList<>());
 	}
 
 	public List<DictionaryLine> lookupRelatedWord(String zh, RelatedChar similarity)
 	{
-		return  similarity == RelatedChar.SAME_FRONT ? indexByFirstChar.getOrDefault(zh, new ArrayList<>()) : indexByLastChar.getOrDefault(zh, new ArrayList<>());
+		return  similarity == RelatedChar.SAME_FRONT ? this.indexByFirstChar.getOrDefault(zh, new ArrayList<>()) : this.indexByLastChar.getOrDefault(zh, new ArrayList<>());
 	}
 
 	public List<DictionaryLine> lookupEnglish(String en)
@@ -277,14 +275,14 @@ public class DumpDBRepo
 		final List<DictionaryLine> result = new ArrayList<>();
 		for(final String match : chineseMatches)
 		{
-			result.addAll(indexByChinese.getOrDefault(match, new ArrayList<>()));
+			result.addAll(this.indexByChinese.getOrDefault(match, new ArrayList<>()));
 		}
 		return result;
 	}
 
 	public List<String> trySubstring(String compoundWord)
 	{
-		return substringMap.getOrDefault(compoundWord, new ArrayList<>());
+		return this.substringMap.getOrDefault(compoundWord, new ArrayList<>());
 	}
 
 	public List<DictionaryLine> findByNormalizedPinyin(List<String> normalizedPinyins)
@@ -292,7 +290,7 @@ public class DumpDBRepo
 		final List<DictionaryLine> result = new ArrayList<>();
 		for(final String zhString : normalizedPinyins)
 		{
-			result.addAll(indexByPinyinNorm.getOrDefault(zhString, new ArrayList<>()));
+			result.addAll(this.indexByPinyinNorm.getOrDefault(zhString, new ArrayList<>()));
 		}
 		return result;	
 	}
@@ -381,6 +379,6 @@ public class DumpDBRepo
 			fillListener.onDiskWrite(DumpFile.SUBSTRING, writes);
 		}
 		simplifiedWriter.close();		
-		loadKeyListOfValues(DUMP_SUBSTRING, substringMap, null);
+		loadKeyListOfValues(DUMP_SUBSTRING, this.substringMap, null);
 	}
 }
