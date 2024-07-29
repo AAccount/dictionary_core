@@ -5,11 +5,11 @@ import java.nio.charset.StandardCharsets;
 public class DictionaryLine 
 {
 	private final String zh;
-	private final String pinyin;
+	private final byte[] pinyin;
 	private final byte[] definition;
 	private final double rank;
 
-	public DictionaryLine(String zh, String pinyin, String definition, double rank) 
+	public DictionaryLine(String zh, byte[] pinyin, String definition, double rank) 
 	{
 		this.zh = zh;
 		this.pinyin = pinyin;
@@ -24,7 +24,7 @@ public class DictionaryLine
 
 	public String getPinyin() 
 	{
-		return pinyin;
+		return new String(this.pinyin, StandardCharsets.UTF_8);
 	}
 
 	public String getdefinition() 

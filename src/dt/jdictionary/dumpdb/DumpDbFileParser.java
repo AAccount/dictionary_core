@@ -22,6 +22,7 @@ public class DumpDbFileParser
 	// Attempt to keep a master set of strings to avoid gratuitous duplicates. Example: 10 "我" strings.
 	// If a string is not in the master pool, it will be added. If it is, the master pool version will be used and the "original" GCed.
 	private final Map<String, String> masterStringPool = new HashMap<>();
+	private final Map<String, byte[]> masterRawPool = new HashMap<>();
 	private final InitListener listener;
 	private final Map<String, List<DictionaryLine>> indexByChinese = new HashMap<>();
 	private final Map<String, List<DictionaryLine>> indexByPinyinNorm = new HashMap<>();
@@ -115,7 +116,7 @@ public class DumpDbFileParser
 			final String def = parts[3].replace(DumpDbConstants.DELIM_ESC, DumpDbConstants.DELIM);
 			final double rank = Double.parseDouble(parts[6]);
 			
-			final DictionaryLine row = new DictionaryLine(this.masterStringsWrapper(chinese), this.masterStringsWrapper(pinyin), def, rank);
+			final DictionaryLine row = new DictionaryLine(this.masterStringsWrapper(chinese), this.masterRawWrapper(pinyin), def, rank);
 			MapUtil.addToListMap(this.indexByChinese, this.masterStringsWrapper(chinese), row);
 			MapUtil.addToListMap(this.indexByPinyinNorm, this.masterStringsWrapper(pinyinNormalized), row);
 			
@@ -134,12 +135,20 @@ public class DumpDbFileParser
 	
 	private String masterStringsWrapper(String target)
 	{
-
 		if(!this.masterStringPool.containsKey(target))
 		{
 			this.masterStringPool.put(target, target);
 		}
 		return this.masterStringPool.get(target);
+	}
+	
+	private byte[] masterRawWrapper(String target)
+	{
+		if(!this.masterRawPool.containsKey(target))
+		{
+			this.masterRawPool.put(target, target.getBytes(StandardCharsets.UTF_8));
+		}
+		return this.masterRawPool.get(target);
 	}
 	
 	private void loadSimplified() throws IOException
