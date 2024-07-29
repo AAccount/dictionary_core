@@ -1,19 +1,19 @@
 package dt.jdictionary.dumpdb.line;
 
+import java.nio.charset.StandardCharsets;
+
 public class DictionaryLine 
 {
 	private final String zh;
 	private final String pinyin;
-	private final String definition;
+	private final byte[] definition;
 	private final double rank;
 
-
-
-	public DictionaryLine(String zh, String pinyin, String singleDefinition, double rank) 
+	public DictionaryLine(String zh, String pinyin, String definition, double rank) 
 	{
 		this.zh = zh;
 		this.pinyin = pinyin;
-		this.definition = singleDefinition;
+		this.definition = definition.getBytes(StandardCharsets.UTF_8);
 		this.rank = rank;
 	}
 	
@@ -29,7 +29,7 @@ public class DictionaryLine
 
 	public String getdefinition() 
 	{
-		return definition;
+		return new String(this.definition, StandardCharsets.UTF_8);
 	}
 
 	public double getRank()
@@ -46,7 +46,7 @@ public class DictionaryLine
 	@Override
 	public String toString()
 	{
-		return "RawDictionaryRow [zh=" + zh + ", pinyin=" + pinyin + ", singleDefinition=" + definition + ", rank=" + rank + "]";
+		return "RawDictionaryRow [zh=" + zh + ", pinyin=" + pinyin + ", singleDefinition=" + this.getdefinition() + ", rank=" + rank + "]";
 	}
 
 	@Override
