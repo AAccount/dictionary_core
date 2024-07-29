@@ -33,13 +33,13 @@ public class DumpDBRepo
 	private final Map<String, String> simplifiedMap = new HashMap<>();
 	private final Map<String, Integer> pastHitsMap = new HashMap<>();
 	private final Map<String, String> simplifiedCache = new HashMap<>();
-	private final Map<String, DictionaryLine[]> indexByChineseRo = new HashMap<>();
-	private final Map<String, DictionaryLine[]> indexByPinyinNormRo = new HashMap<>();
-	private final Map<String, DictionaryLine[]> indexByFirstCharRo = new HashMap<>();
-	private final Map<String, DictionaryLine[]> indexByLastCharRo = new HashMap<>();
-	private final Map<String, String[]> substringMapRo = new HashMap<>();
-	private final Map<String, String[]> measureMapRo = new HashMap<>();
-	private final Map<String, String[]> englishMapRo = new HashMap<>();
+	private final Map<String, DictionaryLine[]> indexByChinese = new HashMap<>();
+	private final Map<String, DictionaryLine[]> indexByPinyinNorm = new HashMap<>();
+	private final Map<String, DictionaryLine[]> indexByFirstChar = new HashMap<>();
+	private final Map<String, DictionaryLine[]> indexByLastChar = new HashMap<>();
+	private final Map<String, String[]> substringMap = new HashMap<>();
+	private final Map<String, String[]> measureMap = new HashMap<>();
+	private final Map<String, String[]> englishMap = new HashMap<>();
 	
 	private final PrintWriter pastHitsWriter;
 	
@@ -60,14 +60,14 @@ public class DumpDBRepo
 	public void loadFromDisk(boolean includePastHits, InitListener initListener) throws IOException, ParseException
 	{
 		final DumpDbParseResult parseResult = new DumpDbFileParser(initListener).loadAll();
-		this.indexByChineseRo.putAll(parseResult.getIndexByChinese());
-		this.indexByPinyinNormRo.putAll(parseResult.getIndexByPinyinNorm());
-		this.indexByFirstCharRo.putAll(parseResult.getIndexByFirstChar());
-		this.indexByLastCharRo.putAll(parseResult.getIndexByLastChar());
+		this.indexByChinese.putAll(parseResult.getIndexByChinese());
+		this.indexByPinyinNorm.putAll(parseResult.getIndexByPinyinNorm());
+		this.indexByFirstChar.putAll(parseResult.getIndexByFirstChar());
+		this.indexByLastChar.putAll(parseResult.getIndexByLastChar());
 		this.simplifiedMap.putAll(parseResult.getSimplifiedMap());
-		this.substringMapRo.putAll(parseResult.getSubstringMap());
-		this.measureMapRo.putAll(parseResult.getMeasureMap());
-		this.englishMapRo.putAll(parseResult.getEnglishMap());
+		this.substringMap.putAll(parseResult.getSubstringMap());
+		this.measureMap.putAll(parseResult.getMeasureMap());
+		this.englishMap.putAll(parseResult.getEnglishMap());
 		if(includePastHits)
 		{
 			this.pastHitsMap.putAll(parseResult.getPastHitsMap());
@@ -94,7 +94,7 @@ public class DumpDBRepo
 			wipable.createNewFile();
 		}
 		
-		J9Shorthand.list(indexByChineseRo, indexByPinyinNormRo, indexByFirstCharRo, indexByLastCharRo, simplifiedMap, substringMapRo, englishMapRo, simplifiedCache).forEach(Map::clear);
+		J9Shorthand.list(indexByChinese, indexByPinyinNorm, indexByFirstChar, indexByLastChar, simplifiedMap, substringMap, englishMap, simplifiedCache).forEach(Map::clear);
 	}
 
 	public void saveHits(List<String> hits)
@@ -126,7 +126,7 @@ public class DumpDBRepo
 		final List<DictionaryLine> result = new ArrayList<>();
 		for(final String zhString : zhStrings)
 		{
-			final DictionaryLine[] stringResult = this.indexByChineseRo.getOrDefault(zhString, new DictionaryLine[] {});
+			final DictionaryLine[] stringResult = this.indexByChinese.getOrDefault(zhString, new DictionaryLine[] {});
 			result.addAll(Arrays.asList(stringResult));
 		}
 		return result;
@@ -159,30 +159,30 @@ public class DumpDBRepo
 
 	public List<String> lookupMeasureWords(String zh)
 	{
-		return Arrays.asList(this.measureMapRo.getOrDefault(zh, new String[] {}));
+		return Arrays.asList(this.measureMap.getOrDefault(zh, new String[] {}));
 	}
 
 	public List<DictionaryLine> lookupRelatedWord(String zh, RelatedChar similarity)
 	{
 		return  similarity == RelatedChar.SAME_FRONT ? 
-				Arrays.asList(this.indexByFirstCharRo.getOrDefault(zh, new DictionaryLine[] {})):
-				Arrays.asList(this.indexByLastCharRo.getOrDefault(zh, new DictionaryLine[] {}));
+				Arrays.asList(this.indexByFirstChar.getOrDefault(zh, new DictionaryLine[] {})):
+				Arrays.asList(this.indexByLastChar.getOrDefault(zh, new DictionaryLine[] {}));
 	}
 
 	public List<DictionaryLine> lookupEnglish(String en)
 	{
-		final String[] chineseMatches = englishMapRo.get(en);
+		final String[] chineseMatches = englishMap.get(en);
 		final List<DictionaryLine> result = new ArrayList<>();
 		for(final String match : chineseMatches)
 		{
-			result.addAll(Arrays.asList(this.indexByChineseRo.getOrDefault(match, new DictionaryLine[] {})));
+			result.addAll(Arrays.asList(this.indexByChinese.getOrDefault(match, new DictionaryLine[] {})));
 		}
 		return result;
 	}
 
 	public List<String> trySubstring(String compoundWord)
 	{
-		return Arrays.asList(this.substringMapRo.getOrDefault(compoundWord, new String[] {}));
+		return Arrays.asList(this.substringMap.getOrDefault(compoundWord, new String[] {}));
 	}
 
 	public List<DictionaryLine> findByNormalizedPinyin(List<String> normalizedPinyins)
@@ -190,7 +190,7 @@ public class DumpDBRepo
 		final List<DictionaryLine> result = new ArrayList<>();
 		for(final String zhString : normalizedPinyins)
 		{
-			result.addAll(Arrays.asList(this.indexByPinyinNormRo.getOrDefault(zhString, new DictionaryLine[] {})));
+			result.addAll(Arrays.asList(this.indexByPinyinNorm.getOrDefault(zhString, new DictionaryLine[] {})));
 		}
 		return result;	
 	}

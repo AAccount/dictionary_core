@@ -23,14 +23,14 @@ public class DumpDbFileParser
 	// If a string is not in the master pool, it will be added. If it is, the master pool version will be used and the "original" GCed.
 	private final Map<String, String> masterStringPool = new HashMap<>();
 	private final InitListener listener;
-	private final Map<String, List<DictionaryLine>> indexByChineseRw = new HashMap<>();
-	private final Map<String, List<DictionaryLine>> indexByPinyinNormRw = new HashMap<>();
-	private final Map<String, List<DictionaryLine>> indexByFirstCharRw = new HashMap<>();
-	private final Map<String, List<DictionaryLine>> indexByLastCharRw = new HashMap<>();
+	private final Map<String, List<DictionaryLine>> indexByChinese = new HashMap<>();
+	private final Map<String, List<DictionaryLine>> indexByPinyinNorm = new HashMap<>();
+	private final Map<String, List<DictionaryLine>> indexByFirstChar = new HashMap<>();
+	private final Map<String, List<DictionaryLine>> indexByLastChar = new HashMap<>();
 	private final Map<String, String> simplifiedMap = new HashMap<>();
-	private final Map<String, List<String>> substringMapRw = new HashMap<>();
-	private final Map<String, List<String>> measureMapRw = new HashMap<>();
-	private final Map<String, List<String>> englishMapRw = new HashMap<>();
+	private final Map<String, List<String>> substringMap = new HashMap<>();
+	private final Map<String, List<String>> measureMap = new HashMap<>();
+	private final Map<String, List<String>> englishMap = new HashMap<>();
 	private final Map<String, Integer> pastHitsMap = new HashMap<>();
 	
 	public DumpDbFileParser(InitListener listener)
@@ -42,55 +42,55 @@ public class DumpDbFileParser
 	public DumpDbParseResult loadAll() throws IOException, ParseException
 	{
 		this.loadIndices();
-		this.loadKeyListOfValues(DumpFile.ENGLISH.getPath(), englishMapRw);
-		this.loadKeyListOfValues(DumpFile.SUBSTRING.getPath(), substringMapRw);
-		this.loadKeyListOfValues(DumpFile.MEASURE_WORDS.getPath(), measureMapRw);
+		this.loadKeyListOfValues(DumpFile.ENGLISH.getPath(), englishMap);
+		this.loadKeyListOfValues(DumpFile.SUBSTRING.getPath(), substringMap);
+		this.loadKeyListOfValues(DumpFile.MEASURE_WORDS.getPath(), measureMap);
 		this.loadSimplified();
 		this.loadPastHits();
 		this.initListenerWrapper(DumpDbConstants.LOADED_ALL_DUMPS, 100);
 		
 		return new DumpDbParseResult(
-				this.createRoDicitionaryLine(this.indexByChineseRw),
-				this.createRoDicitionaryLine(this.indexByPinyinNormRw),
-				this.createRoDicitionaryLine(this.indexByFirstCharRw),
-				this.createRoDicitionaryLine(this.indexByLastCharRw),
+				this.createArrayOfDicitionaryLine(this.indexByChinese),
+				this.createArrayOfDicitionaryLine(this.indexByPinyinNorm),
+				this.createArrayOfDicitionaryLine(this.indexByFirstChar),
+				this.createArrayOfDicitionaryLine(this.indexByLastChar),
 				this.simplifiedMap,
-				this.createRoString(this.substringMapRw),
-				this.createRoString(this.measureMapRw),
-				this.createRoString(this.englishMapRw),
+				this.createArrayOfString(this.substringMap),
+				this.createArrayOfString(this.measureMap),
+				this.createArrayOfString(this.englishMap),
 				pastHitsMap);
 	}
 	
-	private Map<String, DictionaryLine[]> createRoDicitionaryLine(Map<String, List<DictionaryLine>> rwmap)
+	private Map<String, DictionaryLine[]> createArrayOfDicitionaryLine(Map<String, List<DictionaryLine>> listBased)
 	{
-		final Map<String, DictionaryLine[]> romap = new HashMap<>();
-		for(final String key : rwmap.keySet())
+		final Map<String, DictionaryLine[]> arrayBased = new HashMap<>();
+		for(final String key : listBased.keySet())
 		{
-			final List<DictionaryLine> list = rwmap.get(key);
+			final List<DictionaryLine> list = listBased.get(key);
 			final DictionaryLine[] array = new DictionaryLine[list.size()];
 			for(int i=0; i<list.size(); i++)
 			{
 				array[i] = list.get(i);
 			}
-			romap.put(key, array);
+			arrayBased.put(key, array);
 		}
-		return romap;
+		return arrayBased;
 	}
 	
-	private Map<String, String[]> createRoString(Map<String, List<String>> rwmap)
+	private Map<String, String[]> createArrayOfString(Map<String, List<String>> listBased)
 	{
-		final Map<String, String[]> romap = new HashMap<>();
-		for(final String key : rwmap.keySet())
+		final Map<String, String[]> arrayBased = new HashMap<>();
+		for(final String key : listBased.keySet())
 		{
-			final List<String> list = rwmap.get(key);
+			final List<String> list = listBased.get(key);
 			final String[] array = new String[list.size()];
 			for(int i=0; i<list.size(); i++)
 			{
 				array[i] = list.get(i);
 			}
-			romap.put(key, array);		
+			arrayBased.put(key, array);		
 		}
-		return romap;
+		return arrayBased;
 	}
 	
 	private void initListenerWrapper(String desc, int amount)
@@ -116,14 +116,14 @@ public class DumpDbFileParser
 			final double rank = Double.parseDouble(parts[6]);
 			
 			final DictionaryLine row = new DictionaryLine(this.masterStringsWrapper(chinese), this.masterStringsWrapper(pinyin), def, rank);
-			MapUtil.addToListMap(this.indexByChineseRw, this.masterStringsWrapper(chinese), row);
-			MapUtil.addToListMap(this.indexByPinyinNormRw, this.masterStringsWrapper(pinyinNormalized), row);
+			MapUtil.addToListMap(this.indexByChinese, this.masterStringsWrapper(chinese), row);
+			MapUtil.addToListMap(this.indexByPinyinNorm, this.masterStringsWrapper(pinyinNormalized), row);
 			
 			final List<String> trueChars = ChineseText.trueChars(chinese);
 			if(trueChars.size() > 1)
 			{
-				MapUtil.addToListMap(this.indexByFirstCharRw, this.masterStringsWrapper(trueChars.get(0)), row);
-				MapUtil.addToListMap(this.indexByLastCharRw, this.masterStringsWrapper(ListUtils.last(trueChars)), row);
+				MapUtil.addToListMap(this.indexByFirstChar, this.masterStringsWrapper(trueChars.get(0)), row);
+				MapUtil.addToListMap(this.indexByLastChar, this.masterStringsWrapper(ListUtils.last(trueChars)), row);
 			}
 			linesParsed++;
 			initListenerWrapper("Load Dictionary Indicies", linesParsed);
