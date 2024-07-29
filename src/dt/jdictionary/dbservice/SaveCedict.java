@@ -72,7 +72,7 @@ public class SaveCedict implements DbFillListener
 		db.fillMeasureWords(measureWordLines, this);
 		db.fillSimplified(simplifiedLines, this);
 		db.fillSubstrings(substringLines, this);
-		db.loadAll(null);
+		db.loadFromDisk(false, null);
 	}
 
 	private List<SubstringLine> fillSubstrings(List<ChineseSummaryLookup> dictionary)

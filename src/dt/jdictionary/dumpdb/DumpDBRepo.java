@@ -1,13 +1,9 @@
 package dt.jdictionary.dumpdb;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -26,33 +22,17 @@ import dt.jdictionary.dumpdb.line.SimplifiedLine;
 import dt.jdictionary.dumpdb.line.SubstringLine;
 import dt.util.ChineseText;
 import dt.util.J9Shorthand;
-import dt.util.ListUtils;
 import dt.util.MapUtil;
 
 public class DumpDBRepo
 {
-	public static final String LOADED_ALL_DUMPS = "LOADED_ALL_DUMPS";
 	private static final String NULL = "(NULL)";
-	private static final String DELIM = "Ↄ"; // The discontinued Claudian C. Should never show up in normal cases.
-	private static final String DELIM_ESC = "DELIM_ESC_CLAUDIAN_C";
-	
 	private static final DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSS");
 	
-	// This strategy produces piles upon piles of strings which each require a pointer and actual memory for the string.
-	// Attempt to keep a master set of strings to avoid gratuitous duplicates. Example: 10 "我" strings.
-	// If a string is not in the master pool, it will be added. If it is, the master pool version will be used and the "original" GCed.
 	private final Map<String, String> masterStringPool = new HashMap<>();
-	private final Map<String, List<DictionaryLine>> indexByChineseRw = new HashMap<>();
-	private final Map<String, List<DictionaryLine>> indexByPinyinNormRw = new HashMap<>();
-	private final Map<String, List<DictionaryLine>> indexByFirstCharRw = new HashMap<>();
-	private final Map<String, List<DictionaryLine>> indexByLastCharRw = new HashMap<>();
 	private final Map<String, String> simplifiedMap = new HashMap<>();
-	private final Map<String, List<String>> substringMapRw = new HashMap<>();
-	private final Map<String, List<String>> measureMapRw = new HashMap<>();
-	private final Map<String, List<String>> englishMapRw = new HashMap<>();
 	private final Map<String, Integer> pastHitsMap = new HashMap<>();
 	private final Map<String, String> simplifiedCache = new HashMap<>();
-	
 	private final Map<String, DictionaryLine[]> indexByChineseRo = new HashMap<>();
 	private final Map<String, DictionaryLine[]> indexByPinyinNormRo = new HashMap<>();
 	private final Map<String, DictionaryLine[]> indexByFirstCharRo = new HashMap<>();
@@ -74,97 +54,24 @@ public class DumpDBRepo
 		}
 		
 		this.pastHitsWriter = new PrintWriter(new FileWriter(DumpFile.PAST.getPath(), true));
-		this.loadAll(initListener);
-	}
-
-	public void loadAll(InitListener initListener) throws IOException, ParseException
-	{
-		this.loadIndices(initListener);
-		this.createRoDicitionaryLine(this.indexByChineseRw, this.indexByChineseRo);
-		this.createRoDicitionaryLine(this.indexByPinyinNormRw, this.indexByPinyinNormRo);
-		this.createRoDicitionaryLine(this.indexByFirstCharRw, this.indexByFirstCharRo);
-		this.createRoDicitionaryLine(this.indexByLastCharRw, this.indexByLastCharRo);
-		this.loadKeyListOfValues(DumpFile.ENGLISH.getPath(), englishMapRw, initListener);
-		this.createRoString(this.englishMapRw, this.englishMapRo);
-		this.loadKeyListOfValues(DumpFile.SUBSTRING.getPath(), substringMapRw, initListener);
-		this.createRoString(this.substringMapRw, this.substringMapRo);
-		this.loadKeyListOfValues(DumpFile.MEASURE_WORDS.getPath(), measureMapRw, initListener);
-		this.createRoString(this.measureMapRw, this.measureMapRo);
-		this.loadSimplified(initListener);
-		this.loadPastHits(initListener);
-		this.initListenerWrapper(initListener, LOADED_ALL_DUMPS, 100);
-		
-		// The main string dedup has been done. Clear the giant 450000 entry hash map.
-		this.masterStringPool.clear();
-		J9Shorthand.list(this.indexByChineseRw, this.indexByFirstCharRw, this.indexByLastCharRw, this.indexByPinyinNormRw, this.englishMapRw, this.substringMapRw, this.measureMapRw).forEach(Map::clear);
+		this.loadFromDisk(true, initListener);
 	}
 	
-	private void createRoDicitionaryLine(Map<String, List<DictionaryLine>> rwmap, Map<String, DictionaryLine[]> romap)
+	public void loadFromDisk(boolean includePastHits, InitListener initListener) throws IOException, ParseException
 	{
-		for(final String key : rwmap.keySet())
+		final DumpDbParseResult parseResult = new DumpDbFileParser(initListener).loadAll();
+		this.indexByChineseRo.putAll(parseResult.getIndexByChinese());
+		this.indexByPinyinNormRo.putAll(parseResult.getIndexByPinyinNorm());
+		this.indexByFirstCharRo.putAll(parseResult.getIndexByFirstChar());
+		this.indexByLastCharRo.putAll(parseResult.getIndexByLastChar());
+		this.simplifiedMap.putAll(parseResult.getSimplifiedMap());
+		this.substringMapRo.putAll(parseResult.getSubstringMap());
+		this.measureMapRo.putAll(parseResult.getMeasureMap());
+		this.englishMapRo.putAll(parseResult.getEnglishMap());
+		if(includePastHits)
 		{
-			final List<DictionaryLine> list = rwmap.get(key);
-			final DictionaryLine[] array = new DictionaryLine[list.size()];
-			for(int i=0; i<list.size(); i++)
-			{
-				array[i] = list.get(i);
-			}
-			romap.put(key, array);
+			this.pastHitsMap.putAll(parseResult.getPastHitsMap());
 		}
-		rwmap.clear();
-	}
-	
-	private void createRoString(Map<String, List<String>> rwmap, Map<String, String[]> romap)
-	{
-		for(final String key : rwmap.keySet())
-		{
-			final List<String> list = rwmap.get(key);
-			final String[] array = new String[list.size()];
-			for(int i=0; i<list.size(); i++)
-			{
-				array[i] = list.get(i);
-			}
-			romap.put(key, array);		}
-		rwmap.clear();
-	}
-	
-	private void initListenerWrapper(InitListener initListener, String desc, int amount)
-	{
-		if(initListener != null && (amount % 1000 == 0 || desc.equals(LOADED_ALL_DUMPS))) // printing every update dramatically slows down the loading time
-		{
-			initListener.onAnyProgress(desc, amount);
-		}
-	}
-	
-	private void loadIndices(InitListener initListener) throws IOException
-	{
-		final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(DumpFile.CHINESE.getPath()), StandardCharsets.UTF_8));
-		String line = reader.readLine();
-		int linesParsed = 0;
-		while(line != null)
-		{
-			final String[] parts = line.split(DELIM);
-			final String chinese = parts[0];
-			final String pinyin = parts[1];
-			final String pinyinNormalized = parts[2];
-			final String def = parts[3].replace(DELIM_ESC, DELIM);
-			final double rank = Double.parseDouble(parts[6]);
-			
-			final DictionaryLine row = new DictionaryLine(this.masterStringsWrapper(chinese), this.masterStringsWrapper(pinyin), def, rank);
-			MapUtil.addToListMap(this.indexByChineseRw, this.masterStringsWrapper(chinese), row);
-			MapUtil.addToListMap(this.indexByPinyinNormRw, this.masterStringsWrapper(pinyinNormalized), row);
-			
-			final List<String> trueChars = ChineseText.trueChars(chinese);
-			if(trueChars.size() > 1)
-			{
-				MapUtil.addToListMap(this.indexByFirstCharRw, this.masterStringsWrapper(trueChars.get(0)), row);
-				MapUtil.addToListMap(this.indexByLastCharRw, this.masterStringsWrapper(ListUtils.last(trueChars)), row);
-			}
-			linesParsed++;
-			initListenerWrapper(initListener, "Load Dictionary Indicies", linesParsed);
-			line = reader.readLine();
-		}
-		reader.close();
 	}
 	
 	private String masterStringsWrapper(String target)
@@ -175,56 +82,6 @@ public class DumpDBRepo
 			this.masterStringPool.put(target, target);
 		}
 		return this.masterStringPool.get(target);
-	}
-	
-	private void loadSimplified(InitListener initListener) throws IOException
-	{
-		final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(DumpFile.SIMPLIFIED.getPath()), StandardCharsets.UTF_8));
-		String line = reader.readLine();
-		int linesParsed = 0;
-		while(line != null)
-		{
-			final String[] parts = line.split(DELIM);
-			this.simplifiedMap.put(this.masterStringsWrapper(parts[0]), this.masterStringsWrapper(parts[1]));
-			linesParsed++;
-			initListenerWrapper(initListener, "Parsed simplified", linesParsed);
-			line = reader.readLine();
-		}
-		reader.close();
-	}
-	
-	private void loadKeyListOfValues(String dumpFile, Map<String, List<String>> target, InitListener initListener) throws IOException
-	{
-		final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(dumpFile), StandardCharsets.UTF_8));
-		String line = reader.readLine();
-		int linesParsed = 0;
-		final String[] filePath = dumpFile.split("/");
-		final String fileName = filePath[filePath.length-1];
-		while(line != null)
-		{
-			final String[] parts = line.split(DELIM);
-			MapUtil.addToListMap(target, this.masterStringsWrapper(parts[0]), this.masterStringsWrapper(parts[1]));
-			linesParsed++;
-			initListenerWrapper(initListener, "Parsing file " + fileName, linesParsed);
-			line = reader.readLine();
-		}
-		reader.close();
-	}
-	
-	private void loadPastHits(InitListener initListener) throws IOException, ParseException
-	{
-		final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(DumpFile.PAST.getPath()), StandardCharsets.UTF_8));
-		String line = reader.readLine();
-		int linesParsed = 0;
-		while(line != null)
-		{
-			final String[] parts = line.split(DELIM);
-			MapUtil.incrementCounterMap(this.pastHitsMap, this.masterStringsWrapper(parts[0]));
-			linesParsed++;
-			initListenerWrapper(initListener, "Parsing past hits", linesParsed);
-			line = reader.readLine();
-		}
-		reader.close();
 	}
 
 	public void wipe() throws IOException
@@ -245,7 +102,7 @@ public class DumpDBRepo
 		for(final String hit : hits)
 		{
 			final Date now = new Date();
-			this.pastHitsWriter.println(String.format("%s%s%s", hit, DELIM, dateFormatter.format(now)));
+			this.pastHitsWriter.println(String.format("%s%s%s", hit, DumpDbConstants.DELIM, dateFormatter.format(now)));
 			this.pastHitsWriter.flush();
 			MapUtil.incrementCounterMap(this.pastHitsMap, this.masterStringsWrapper(hit));
 		}
@@ -347,14 +204,14 @@ public class DumpDBRepo
 			final List<String> trueChars = ChineseText.trueChars(entry.getChinese());
 			final String firstChar = trueChars.size() > 1 ? trueChars.get(0) : NULL;
 			final String lastChar = trueChars.size() > 1 ? trueChars.get(trueChars.size()-1) : NULL;
-			final String definition = entry.getDefinition().toLowerCase().replace(DELIM, DELIM_ESC);
+			final String definition = entry.getDefinition().toLowerCase().replace(DumpDbConstants.DELIM, DumpDbConstants.DELIM_ESC);
 			chineseDumpWriter.println(String.format("%s%s%s%s%s%s%s%s%s%s%s%s%f", 
-					entry.getChinese(), DELIM, 
-					entry.getPinyin(), DELIM, 
-					ChineseText.normalizePinyin(entry.getPinyin()), DELIM,
-					definition, DELIM,
-					firstChar, DELIM,
-					lastChar, DELIM,
+					entry.getChinese(), DumpDbConstants.DELIM, 
+					entry.getPinyin(), DumpDbConstants.DELIM, 
+					ChineseText.normalizePinyin(entry.getPinyin()), DumpDbConstants.DELIM,
+					definition, DumpDbConstants.DELIM,
+					firstChar, DumpDbConstants.DELIM,
+					lastChar, DumpDbConstants.DELIM,
 					entry.getRank()));
 			writes++;
 			fillListener.onDiskWrite(DumpFile.CHINESE, writes);
@@ -371,7 +228,7 @@ public class DumpDBRepo
 			final List<String> potentials = enToPossibleChinese.get(word);
 			for(final String potential : potentials)
 			{
-				englishDumpWriter.println(String.format("%s%s%s", word, DELIM, potential));
+				englishDumpWriter.println(String.format("%s%s%s", word, DumpDbConstants.DELIM, potential));
 				writes++;
 				fillListener.onDiskWrite(DumpFile.ENGLISH, writes);
 			}
@@ -386,7 +243,7 @@ public class DumpDBRepo
 		final PrintWriter measureWriter = new PrintWriter(new FileWriter(DumpFile.MEASURE_WORDS.getPath(), false));
 		for(final MeasureWordLine row : allRows)
 		{
-			measureWriter.println(String.format("%s%s%s%s%s", row.getZh(), DELIM, row.getMeasure(), DELIM, row.getMeasurePinyin()));
+			measureWriter.println(String.format("%s%s%s%s%s", row.getZh(), DumpDbConstants.DELIM, row.getMeasure(), DumpDbConstants.DELIM, row.getMeasurePinyin()));
 			writes++;
 			fillListener.onDiskWrite(DumpFile.MEASURE_WORDS, writes);
 		}
@@ -399,7 +256,7 @@ public class DumpDBRepo
 		final PrintWriter simplifiedWriter = new PrintWriter(new FileWriter(DumpFile.SIMPLIFIED.getPath(), false));
 		for(final SimplifiedLine row : allRows)
 		{
-			simplifiedWriter.println(String.format("%s%s%s", row.getOriginal(), DELIM, row.getSimplified()));
+			simplifiedWriter.println(String.format("%s%s%s", row.getOriginal(), DumpDbConstants.DELIM, row.getSimplified()));
 			writes++;
 			fillListener.onDiskWrite(DumpFile.SIMPLIFIED, writes);
 		}
@@ -412,7 +269,7 @@ public class DumpDBRepo
 		final PrintWriter simplifiedWriter = new PrintWriter(new FileWriter(DumpFile.SUBSTRING.getPath(), false));
 		for(final SubstringLine row : allRows)
 		{
-			simplifiedWriter.println(String.format("%s%s%s", row.getSubstring(), DELIM, row.getFullString()));
+			simplifiedWriter.println(String.format("%s%s%s", row.getSubstring(), DumpDbConstants.DELIM, row.getFullString()));
 			writes++;
 			fillListener.onDiskWrite(DumpFile.SUBSTRING, writes);
 		}
