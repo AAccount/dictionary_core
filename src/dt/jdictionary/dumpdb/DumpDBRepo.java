@@ -32,15 +32,6 @@ import dt.util.MapUtil;
 public class DumpDBRepo
 {
 	public static final String LOADED_ALL_DUMPS = "LOADED_ALL_DUMPS";
-	
-	private static final String DUMP_PREFIX = System.getProperty("user.home") + "/Programs/JDictionary/";
-	private static final String DUMP_ENGLISH = DUMP_PREFIX + "dump_english";
-	private static final String DUMP_CHINESE = DUMP_PREFIX + "dump_chinese";
-	private static final String DUMP_MEASURE = DUMP_PREFIX + "dump_measure_words";
-	private static final String DUMP_SIMPLIFIED = DUMP_PREFIX + "dump_simplified";
-	private static final String DUMP_SUBSTRING = DUMP_PREFIX + "dump_substring";
-	private static final String DUMP_PAST = DUMP_PREFIX + "dump_past_hits";
-	
 	private static final String NULL = "(NULL)";
 	private static final String DELIM = "Ↄ"; // The discontinued Claudian C. Should never show up in normal cases.
 	private static final String DELIM_ESC = "DELIM_ESC_CLAUDIAN_C";
@@ -74,7 +65,7 @@ public class DumpDBRepo
 	
 	public DumpDBRepo(InitListener initListener) throws IOException, ParseException
 	{
-		final List<String> dumpFiles = J9Shorthand.list(DUMP_CHINESE, DUMP_ENGLISH, DUMP_MEASURE, DUMP_PAST, DUMP_SIMPLIFIED, DUMP_SUBSTRING);
+		final List<String> dumpFiles = J9Shorthand.list(DumpFile.CHINESE.getPath(), DumpFile.ENGLISH.getPath(), DumpFile.MEASURE_WORDS.getPath(), DumpFile.PAST.getPath(), DumpFile.SIMPLIFIED.getPath(), DumpFile.SUBSTRING.getPath());
 		for(final String dump : dumpFiles)
 		{
 			final File file = new File(dump);
@@ -82,7 +73,7 @@ public class DumpDBRepo
 			file.createNewFile();
 		}
 		
-		this.pastHitsWriter = new PrintWriter(new FileWriter(DUMP_PAST, true));
+		this.pastHitsWriter = new PrintWriter(new FileWriter(DumpFile.PAST.getPath(), true));
 		this.loadAll(initListener);
 	}
 
@@ -93,11 +84,11 @@ public class DumpDBRepo
 		this.createRoDicitionaryLine(this.indexByPinyinNormRw, this.indexByPinyinNormRo);
 		this.createRoDicitionaryLine(this.indexByFirstCharRw, this.indexByFirstCharRo);
 		this.createRoDicitionaryLine(this.indexByLastCharRw, this.indexByLastCharRo);
-		this.loadKeyListOfValues(DUMP_ENGLISH, englishMapRw, initListener);
+		this.loadKeyListOfValues(DumpFile.ENGLISH.getPath(), englishMapRw, initListener);
 		this.createRoString(this.englishMapRw, this.englishMapRo);
-		this.loadKeyListOfValues(DUMP_SUBSTRING, substringMapRw, initListener);
+		this.loadKeyListOfValues(DumpFile.SUBSTRING.getPath(), substringMapRw, initListener);
 		this.createRoString(this.substringMapRw, this.substringMapRo);
-		this.loadKeyListOfValues(DUMP_MEASURE, measureMapRw, initListener);
+		this.loadKeyListOfValues(DumpFile.MEASURE_WORDS.getPath(), measureMapRw, initListener);
 		this.createRoString(this.measureMapRw, this.measureMapRo);
 		this.loadSimplified(initListener);
 		this.loadPastHits(initListener);
@@ -147,7 +138,7 @@ public class DumpDBRepo
 	
 	private void loadIndices(InitListener initListener) throws IOException
 	{
-		final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(DUMP_CHINESE), StandardCharsets.UTF_8));
+		final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(DumpFile.CHINESE.getPath()), StandardCharsets.UTF_8));
 		String line = reader.readLine();
 		int linesParsed = 0;
 		while(line != null)
@@ -188,7 +179,7 @@ public class DumpDBRepo
 	
 	private void loadSimplified(InitListener initListener) throws IOException
 	{
-		final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(DUMP_SIMPLIFIED), StandardCharsets.UTF_8));
+		final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(DumpFile.SIMPLIFIED.getPath()), StandardCharsets.UTF_8));
 		String line = reader.readLine();
 		int linesParsed = 0;
 		while(line != null)
@@ -222,7 +213,7 @@ public class DumpDBRepo
 	
 	private void loadPastHits(InitListener initListener) throws IOException, ParseException
 	{
-		final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(DUMP_PAST), StandardCharsets.UTF_8));
+		final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(DumpFile.PAST.getPath()), StandardCharsets.UTF_8));
 		String line = reader.readLine();
 		int linesParsed = 0;
 		while(line != null)
@@ -238,7 +229,7 @@ public class DumpDBRepo
 
 	public void wipe() throws IOException
 	{
-		final List<String> toWipe = J9Shorthand.list(DUMP_CHINESE, DUMP_ENGLISH, DUMP_MEASURE, DUMP_SIMPLIFIED, DUMP_SUBSTRING);
+		final List<String> toWipe = J9Shorthand.list(DumpFile.CHINESE.getPath(), DumpFile.ENGLISH.getPath(), DumpFile.MEASURE_WORDS.getPath(), DumpFile.SIMPLIFIED.getPath(), DumpFile.SUBSTRING.getPath());
 		for(final String wipeMe : toWipe)
 		{
 			final File wipable = new File(wipeMe);
@@ -350,7 +341,7 @@ public class DumpDBRepo
 	public void fillDictionary(List<ChineseSummaryLookup> allEntries, DbFillListener fillListener) throws IOException
 	{
 		int writes = 0;
-		final PrintWriter chineseDumpWriter = new PrintWriter(new FileWriter(DUMP_CHINESE, false));
+		final PrintWriter chineseDumpWriter = new PrintWriter(new FileWriter(DumpFile.CHINESE.getPath(), false));
 		for(final ChineseSummaryLookup entry : allEntries)
 		{
 			final List<String> trueChars = ChineseText.trueChars(entry.getChinese());
@@ -374,7 +365,7 @@ public class DumpDBRepo
 	public void fillEnglishMap(Map<String, List<String>> enToPossibleChinese, DbFillListener fillListener) throws IOException
 	{
 		int writes = 0;
-		final PrintWriter englishDumpWriter = new PrintWriter(new FileWriter(DUMP_ENGLISH, false));
+		final PrintWriter englishDumpWriter = new PrintWriter(new FileWriter(DumpFile.ENGLISH.getPath(), false));
 		for(final String word : enToPossibleChinese.keySet())
 		{
 			final List<String> potentials = enToPossibleChinese.get(word);
@@ -392,7 +383,7 @@ public class DumpDBRepo
 	public void fillMeasureWords(List<MeasureWordLine> allRows, DbFillListener fillListener) throws IOException
 	{
 		int writes = 0;
-		final PrintWriter measureWriter = new PrintWriter(new FileWriter(DUMP_MEASURE, false));
+		final PrintWriter measureWriter = new PrintWriter(new FileWriter(DumpFile.MEASURE_WORDS.getPath(), false));
 		for(final MeasureWordLine row : allRows)
 		{
 			measureWriter.println(String.format("%s%s%s%s%s", row.getZh(), DELIM, row.getMeasure(), DELIM, row.getMeasurePinyin()));
@@ -405,7 +396,7 @@ public class DumpDBRepo
 	public void fillSimplified(List<SimplifiedLine> allRows, DbFillListener fillListener) throws IOException
 	{
 		int writes = 0;
-		final PrintWriter simplifiedWriter = new PrintWriter(new FileWriter(DUMP_SIMPLIFIED, false));
+		final PrintWriter simplifiedWriter = new PrintWriter(new FileWriter(DumpFile.SIMPLIFIED.getPath(), false));
 		for(final SimplifiedLine row : allRows)
 		{
 			simplifiedWriter.println(String.format("%s%s%s", row.getOriginal(), DELIM, row.getSimplified()));
@@ -418,7 +409,7 @@ public class DumpDBRepo
 	public void fillSubstrings(List<SubstringLine> allRows, DbFillListener fillListener) throws IOException
 	{
 		int writes = 0;
-		final PrintWriter simplifiedWriter = new PrintWriter(new FileWriter(DUMP_SUBSTRING, false));
+		final PrintWriter simplifiedWriter = new PrintWriter(new FileWriter(DumpFile.SUBSTRING.getPath(), false));
 		for(final SubstringLine row : allRows)
 		{
 			simplifiedWriter.println(String.format("%s%s%s", row.getSubstring(), DELIM, row.getFullString()));
