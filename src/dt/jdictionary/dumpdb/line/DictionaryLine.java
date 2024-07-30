@@ -60,7 +60,7 @@ public class DictionaryLine
 		final DictionaryLine casted = (DictionaryLine)obj;
 		return 
 			casted.zh.equals(this.zh) && 
-			casted.pinyin.equals(this.pinyin) && 
+			casted.getPinyin().equals(this.getPinyin()) && 
 			casted.getdefinition().equals(this.getdefinition());
 	}
 }
