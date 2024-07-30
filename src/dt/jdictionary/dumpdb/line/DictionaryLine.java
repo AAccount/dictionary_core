@@ -61,6 +61,6 @@ public class DictionaryLine
 		return 
 			casted.zh.equals(this.zh) && 
 			casted.pinyin.equals(this.pinyin) && 
-			casted.definition.equals(this.definition);
+			casted.getdefinition().equals(this.getdefinition());
 	}
 }
