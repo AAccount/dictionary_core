@@ -36,7 +36,6 @@ import dt.jdictionary.dumpdb.line.DictionaryLine;
 import dt.jdictionary.util.GenerateCombinations;
 import dt.util.ChineseText;
 import dt.util.Debug;
-import dt.util.J9Shorthand;
 
 public class DbService 
 {
@@ -52,7 +51,7 @@ public class DbService
 		final List<Exception> exceptions = Collections.synchronizedList(new ArrayList<>());
 		final CompletableFuture<ChineseDefinitionLookup> directResults = CompletableFuture.supplyAsync(() -> {return this.lookupChineseDefinition(chinese, exceptions);});
 		
-		final List<AlternateSearch> alts = J9Shorthand.list(
+		final List<AlternateSearch> alts = List.of(
 			new SameFrontSearch(chinese, db), 
 			new SameBackSearch(chinese, db), 
 			new SubstringSearch(chinese, db), 
@@ -125,7 +124,7 @@ public class DbService
 	{
 		try
 		{
-			final List<DictionaryLine> rawResults = db.lookupChinese(J9Shorthand.list(zh));
+			final List<DictionaryLine> rawResults = db.lookupChinese(List.of(zh));
 			final Map<String, List<String>> resultsByPinyin = new HashMap<>();
 			for(final DictionaryLine rawResult : rawResults)
 			{

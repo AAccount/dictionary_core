@@ -11,7 +11,6 @@ import dt.jdictionary.ChineseSummaryLookup;
 import dt.jdictionary.dbservice.DbServiceUtils;
 import dt.jdictionary.dumpdb.DumpDBRepo;
 import dt.util.ChineseText;
-import dt.util.J9Shorthand;
 
 public class TypoSearch implements AlternateSearch
 {
@@ -105,7 +104,7 @@ public class TypoSearch implements AlternateSearch
 		else
 		{
 			final List<String> subresult = pinyinPermutations(individualPinyins.subList(1, individualPinyins.size()));
-			return pinyinPermutations(J9Shorthand.list(individualPinyins.get(0), subresult));
+			return pinyinPermutations(List.of(individualPinyins.get(0), subresult));
 		}
 	}
 
