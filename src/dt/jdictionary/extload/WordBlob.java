@@ -11,7 +11,6 @@ import java.util.List;
 
 import dt.jdictionary.ProgressListener;
 import dt.util.ChineseText;
-import dt.util.StringUtil;
 
 public class WordBlob
 {
@@ -31,7 +30,7 @@ public class WordBlob
 		String line = fileReader.readLine();
 		while (line != null)
 		{
-			final String cleaned = StringUtil.j11strip(line);
+			final String cleaned = line.strip();
 			if (cleaned.length() < 1)
 			{
 				line = fileReader.readLine();

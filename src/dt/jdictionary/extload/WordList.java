@@ -13,7 +13,6 @@ import java.util.Set;
 
 import dt.jdictionary.ProgressListener;
 import dt.util.ChineseText;
-import dt.util.StringUtil;
 
 public class WordList
 {	
@@ -33,7 +32,7 @@ public class WordList
 			String line = fileReader.readLine();
 			while (line != null)
 			{
-				final String cleaned = StringUtil.j11strip(line);
+				final String cleaned = line.strip();
 				if(cleaned.length() > 1 && ChineseText.allChinese(cleaned)) // Past hits is intended to help prioritize compound words.
 				{
 					hashSet.add(cleaned);
