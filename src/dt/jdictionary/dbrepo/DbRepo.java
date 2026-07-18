@@ -1,7 +1,5 @@
 package dt.jdictionary.dbrepo;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -24,7 +22,6 @@ import java.util.Optional;
 import dt.cedict.SimpleLookup;
 import dt.jdictionary.dbrepo.raw.Columns;
 import dt.jdictionary.dbrepo.raw.DbRepoCache;
-import dt.jdictionary.dbrepo.raw.PastHit;
 import dt.jdictionary.dbrepo.raw.RawDictionaryRow;
 import dt.jdictionary.dbrepo.raw.RawMeasureWordRow;
 import dt.jdictionary.dbrepo.raw.RawSimplifiedRow;
@@ -35,10 +32,6 @@ import dt.util.ListUtils;
 
 public class DbRepo
 {
-//	public static final int INIT_TRX_COUNT = 2;
-//	public static final int DICT_EN_TRX = 2;
-//	public static final int POST_DICT_TRX = 3; // measure words, simplified, 4 chars
-
 	private Connection db;
 
 	private static final String dateTimeFormat = "yyyy-MM-dd HH:mm:ss.SSSS";
@@ -173,7 +166,6 @@ public class DbRepo
 		vaccuum.execute("vacuum;");
 		db.setAutoCommit(false);
 		DbRepoCache.getInstance().wipe();
-
 	}
 	
 	
