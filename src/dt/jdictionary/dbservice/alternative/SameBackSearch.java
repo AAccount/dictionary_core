@@ -1,29 +1,30 @@
 package dt.jdictionary.dbservice.alternative;
 
+import java.sql.SQLException;
 import java.util.List;
 
 import dt.jdictionary.ChineseSummaryLookup;
+import dt.jdictionary.dbrepo.DbRepo;
+import dt.jdictionary.dbrepo.raw.RawDictionaryRow;
+import dt.jdictionary.dbrepo.raw.RelatedChar;
 import dt.jdictionary.dbservice.DbServiceUtils;
-import dt.jdictionary.dumpdb.DumpDBRepo;
-import dt.jdictionary.dumpdb.RelatedChar;
-import dt.jdictionary.dumpdb.line.DictionaryLine;
 
 public class SameBackSearch implements AlternateSearch
 {
 	private final String zh;
-	private final DumpDBRepo db;
+	private final DbRepo db;
 	
-	public SameBackSearch(String zh, DumpDBRepo db)
+	public SameBackSearch(String zh, DbRepo db)
 	{
 		this.zh = zh;
 		this.db = db;
 	}
 
 	@Override
-	public List<ChineseSummaryLookup> trySearch()
+	public List<ChineseSummaryLookup> trySearch() throws SQLException
 	{
 		final String lastChar = Character.toString(this.zh.charAt(this.zh.length()-1));
-		final List<DictionaryLine> rawResults = this.db.lookupRelatedWord(lastChar, RelatedChar.SAME_BACK);
+		final List<RawDictionaryRow> rawResults = this.db.lookupRelatedWord(lastChar, RelatedChar.SAME_BACK);
 		return DbServiceUtils.convertRawToSimple(rawResults);
 	}
 

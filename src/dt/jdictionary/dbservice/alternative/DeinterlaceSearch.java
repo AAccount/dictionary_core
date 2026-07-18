@@ -5,16 +5,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import dt.jdictionary.ChineseSummaryLookup;
+import dt.jdictionary.dbrepo.DbRepo;
 import dt.jdictionary.dbservice.DbServiceUtils;
-import dt.jdictionary.dumpdb.DumpDBRepo;
 import dt.util.ChineseText;
 
 public class DeinterlaceSearch implements AlternateSearch
 {	
 	private final String zh;
-	private final DumpDBRepo db;
+	private final DbRepo db;
 	
-	public DeinterlaceSearch(String zh, DumpDBRepo db)
+	public DeinterlaceSearch(String zh, DbRepo db)
 	{
 		this.zh = zh;
 		this.db = db;
@@ -25,7 +25,7 @@ public class DeinterlaceSearch implements AlternateSearch
 	 * @throws SQLException 
 	 */
 	@Override
-	public List<ChineseSummaryLookup> trySearch()
+	public List<ChineseSummaryLookup> trySearch() throws SQLException
 	{
 		final int MIN_DEINTERLACE = 3;
 		final int MAX_DEINTERLACE = 4;

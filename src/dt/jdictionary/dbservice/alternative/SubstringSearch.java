@@ -1,5 +1,6 @@
 package dt.jdictionary.dbservice.alternative;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -7,19 +8,19 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import dt.jdictionary.ChineseSummaryLookup;
+import dt.jdictionary.dbrepo.DbRepo;
 import dt.jdictionary.dbservice.DbServiceUtils;
-import dt.jdictionary.dumpdb.DumpDBRepo;
 import dt.jdictionary.util.GenerateSubstrings;
 import dt.util.ChineseText;
 
 public class SubstringSearch implements AlternateSearch
 {
 	private final String zh;
-	private final DumpDBRepo db;
+	private final DbRepo db;
 	private final Map<String, Double> frontToBackRanking;
 	public static final String LOOKUP_NAME = "Substring";
 	
-	public SubstringSearch(String zh, DumpDBRepo db)
+	public SubstringSearch(String zh, DbRepo db)
 	{
 		this.zh = zh;
 		this.db = db;
@@ -27,7 +28,7 @@ public class SubstringSearch implements AlternateSearch
 	}
 
 	@Override
-	public List<ChineseSummaryLookup> trySearch()
+	public List<ChineseSummaryLookup> trySearch() throws SQLException
 	{
 		final List<String> allSubstrings = GenerateSubstrings.generateSubstrings(this.zh);
 		return DbServiceUtils

@@ -1,6 +1,7 @@
 package dt.jdictionary.dbservice;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,13 +18,14 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import dt.cedict.CedictDump;
 import dt.jdictionary.ChineseDefinitionLookup;
 import dt.jdictionary.ChineseSummaryLookup;
 import dt.jdictionary.ExceptionPile;
 import dt.jdictionary.ExhaustiveChineseLookup;
-import dt.jdictionary.InitListener;
-import dt.jdictionary.MeasureSummary;
 import dt.jdictionary.ProgressListener;
+import dt.jdictionary.dbrepo.DbRepo;
+import dt.jdictionary.dbrepo.raw.RawDictionaryRow;
 import dt.jdictionary.dbservice.alternative.AlternateSearch;
 import dt.jdictionary.dbservice.alternative.DeinterlaceSearch;
 import dt.jdictionary.dbservice.alternative.SameBackSearch;
@@ -31,18 +33,16 @@ import dt.jdictionary.dbservice.alternative.SameFrontSearch;
 import dt.jdictionary.dbservice.alternative.SubstringOfSearch;
 import dt.jdictionary.dbservice.alternative.SubstringSearch;
 import dt.jdictionary.dbservice.alternative.TypoSearch;
-import dt.jdictionary.dumpdb.DumpDBRepo;
-import dt.jdictionary.dumpdb.line.DictionaryLine;
 import dt.jdictionary.util.GenerateCombinations;
 import dt.util.ChineseText;
 import dt.util.Debug;
 
 public class DbService 
 {
-	private final DumpDBRepo db;
-	public DbService(InitListener initlistener) throws IOException, ParseException
+	private final DbRepo db;
+	public DbService() throws IOException, ParseException, ClassNotFoundException, SQLException
 	{
-		db = new DumpDBRepo(initlistener);
+		db = new DbRepo();
 	}
 
 	public ExhaustiveChineseLookup lookupChinese(String chinese, boolean shouldSave) throws ExceptionPile
@@ -116,7 +116,7 @@ public class DbService
 		}
 		
 		final List<String> candidates = results.stream().map(ChineseSummaryLookup::getChinese).collect(Collectors.toCollection(ArrayList::new));
-		final Map<String, Integer> pastHits = db.lookupPastHits(candidates);
+		final Map<String, Long> pastHits = db.lookupPastHits(candidates);
 		return DbServiceUtils.rerank(results, pastHits);
 	}
 	
@@ -124,16 +124,16 @@ public class DbService
 	{
 		try
 		{
-			final List<DictionaryLine> rawResults = db.lookupChinese(List.of(zh));
+			final List<RawDictionaryRow> rawResults = db.lookupChinese(List.of(zh));
 			final Map<String, List<String>> resultsByPinyin = new HashMap<>();
-			for(final DictionaryLine rawResult : rawResults)
+			for(final RawDictionaryRow rawResult : rawResults)
 			{
 				final String pinyin = rawResult.getPinyin();
 				if(!resultsByPinyin.keySet().contains(pinyin))
 				{
 					resultsByPinyin.put(pinyin, new ArrayList<>());
 				}
-				resultsByPinyin.get(pinyin).add(rawResult.getdefinition());
+				resultsByPinyin.get(pinyin).add(rawResult.getSingleDefinition());
 			}
 	
 			final String simplified = db.lookupSimplified(zh);
@@ -239,13 +239,13 @@ public class DbService
 	{
 		final List<ChineseSummaryLookup> rawResults =  DbServiceUtils.convertRawToSimple(db.lookupEnglish(singleWord));
 		final List<String> candidates = rawResults.stream().map(ChineseSummaryLookup::getChinese).collect(Collectors.toCollection(ArrayList::new));
-		final Map<String, Integer> pastHits = db.lookupPastHits(candidates);
+		final Map<String, Long> pastHits = db.lookupPastHits(candidates);
 		return DbServiceUtils.rerank(rawResults, pastHits);
 	}
 
-	public void saveCedictDump(List<ChineseSummaryLookup> dictionary, Map<String, List<MeasureSummary>> measureWords, Map<String, String> simplifiedChars, ProgressListener listener) throws Exception
+	public void saveCedictDump(CedictDump dump, ProgressListener listener) throws Exception
 	{
-		new SaveCedict(db, dictionary, measureWords, simplifiedChars, listener).save();;
+		new SaveCedict(db, dump, listener).save();
 	}
 	
 	public void savePastHits(List<String> words, boolean verifyInDictionary) throws Exception
@@ -256,8 +256,8 @@ public class DbService
 	
 	private List<String> checkChineseInDictionary(List<String> words) throws Exception
 	{
-		final List<DictionaryLine> rawDictionaryRows = db.lookupChinese(words);
-		final Set<String> inDictionary = rawDictionaryRows.stream().map(DictionaryLine::getZh).collect(Collectors.toCollection(HashSet::new));
+		final List<RawDictionaryRow> rawDictionaryRows = db.lookupChinese(words);
+		final Set<String> inDictionary = rawDictionaryRows.stream().map(RawDictionaryRow::getZh).collect(Collectors.toCollection(HashSet::new));
 		return words.stream().filter(word -> inDictionary.contains(word)).collect(Collectors.toCollection(ArrayList::new));
 	}
 	

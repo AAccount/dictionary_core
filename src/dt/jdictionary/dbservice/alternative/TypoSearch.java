@@ -1,5 +1,6 @@
 package dt.jdictionary.dbservice.alternative;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,23 +9,23 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import dt.jdictionary.ChineseSummaryLookup;
+import dt.jdictionary.dbrepo.DbRepo;
 import dt.jdictionary.dbservice.DbServiceUtils;
-import dt.jdictionary.dumpdb.DumpDBRepo;
 import dt.util.ChineseText;
 
 public class TypoSearch implements AlternateSearch
 {
 	private final String zh;
-	private final DumpDBRepo db;
+	private final DbRepo db;
 	
-	public TypoSearch(String zh, DumpDBRepo db)
+	public TypoSearch(String zh, DbRepo db)
 	{
 		this.zh = zh;
 		this.db = db;
 	}
 
 	@Override
-	public List<ChineseSummaryLookup> trySearch()
+	public List<ChineseSummaryLookup> trySearch() throws SQLException
 	{
 		final List<String> trueChars = ChineseText.trueChars(this.zh);
 		final List<List<String>> normalizedPinyins = findPinyinForZh(trueChars);
@@ -58,7 +59,7 @@ public class TypoSearch implements AlternateSearch
 		return similarity;
 	}
 
-	private List<List<String>> findPinyinForZh(List<String> chars)
+	private List<List<String>> findPinyinForZh(List<String> chars) throws SQLException
 	{
 		final HashMap<String, Set<String>> pinyinMap = new HashMap<>();
 		final List<ChineseSummaryLookup> dictionaryEntries = DbServiceUtils.convertRawToSimple(this.db.lookupChinese(chars));
