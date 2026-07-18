@@ -29,7 +29,7 @@ public class SubstringOfSearch implements AlternateSearch
 			return new ArrayList<>();
 		}
 		
-		return DbServiceUtils.convertRawToSimple(this.db.lookupChinese(possibleMatches)).stream().collect(Collectors.toCollection(ArrayList::new));
+		return DbServiceUtils.convertRawToSimple(this.db.lookupChinese(possibleMatches)).stream().toList();
 	}
 
 	@Override

@@ -115,7 +115,7 @@ public class DbService
 			return results;
 		}
 		
-		final List<String> candidates = results.stream().map(ChineseSummaryLookup::getChinese).collect(Collectors.toCollection(ArrayList::new));
+		final List<String> candidates = results.stream().map(ChineseSummaryLookup::getChinese).toList();
 		final Map<String, Long> pastHits = db.lookupPastHits(candidates);
 		return DbServiceUtils.rerank(results, pastHits);
 	}
@@ -161,7 +161,7 @@ public class DbService
 		{
 			final List<String> substringHits = substrings.stream()
 				.filter(substringEntry -> ChineseText.trueChars(substringEntry.getChinese()).size() > 1)
-				.map(ChineseSummaryLookup::getChinese).collect(Collectors.toCollection(ArrayList::new));
+				.map(ChineseSummaryLookup::getChinese).toList();
 			hits.addAll(substringHits);
 		}
 		db.saveHits(hits);
@@ -238,7 +238,7 @@ public class DbService
 	private List<ChineseSummaryLookup> lookupSingleEnglishWord(String singleWord) throws Exception
 	{
 		final List<ChineseSummaryLookup> rawResults =  DbServiceUtils.convertRawToSimple(db.lookupEnglish(singleWord));
-		final List<String> candidates = rawResults.stream().map(ChineseSummaryLookup::getChinese).collect(Collectors.toCollection(ArrayList::new));
+		final List<String> candidates = rawResults.stream().map(ChineseSummaryLookup::getChinese).toList();
 		final Map<String, Long> pastHits = db.lookupPastHits(candidates);
 		return DbServiceUtils.rerank(rawResults, pastHits);
 	}
@@ -258,7 +258,7 @@ public class DbService
 	{
 		final List<RawDictionaryRow> rawDictionaryRows = db.lookupChinese(words);
 		final Set<String> inDictionary = rawDictionaryRows.stream().map(RawDictionaryRow::getZh).collect(Collectors.toCollection(HashSet::new));
-		return words.stream().filter(word -> inDictionary.contains(word)).collect(Collectors.toCollection(ArrayList::new));
+		return words.stream().filter(word -> inDictionary.contains(word)).toList();
 	}
 	
 	public List<String> extractCompoundWords(List<String> manySentences) throws Exception

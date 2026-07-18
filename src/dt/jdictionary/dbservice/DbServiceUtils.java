@@ -15,12 +15,12 @@ public class DbServiceUtils
 	{
 		return rawResults.stream()
 				.map(line -> new ChineseSummaryLookup(line.getZh(), line.getPinyin(), line.getSingleDefinition(), line.getRank()))
-				.collect(Collectors.toCollection(ArrayList::new));
+				.toList();
 	}
 	
 	public static List<ChineseSummaryLookup> rerank(List<ChineseSummaryLookup> results, Map<String, Long> pastHits)
 	{
-		return results.stream().map(lookup -> rerankSingle(lookup, pastHits)).collect(Collectors.toCollection(ArrayList::new));
+		return results.stream().map(lookup -> rerankSingle(lookup, pastHits)).toList();
 	}
 	
 	private static ChineseSummaryLookup rerankSingle(ChineseSummaryLookup lookup, Map<String, Long> pastHits)

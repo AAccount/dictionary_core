@@ -40,7 +40,7 @@ public class TypoSearch implements AlternateSearch
 		return candidates.stream()
 				.map(candidate -> new ChineseSummaryLookup(candidate, pinyinLookupSimilarity(candidate, trueChars)))
 				.filter(candidate -> candidate.getRank() >0 && candidate.getRank() < this.zh.length())
-				.collect(Collectors.toCollection(ArrayList::new));
+				.toList();
 	}
 
 	private int pinyinLookupSimilarity(ChineseSummaryLookup candidate, List<String> targetChars)

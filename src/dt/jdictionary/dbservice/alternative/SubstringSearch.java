@@ -34,7 +34,7 @@ public class SubstringSearch implements AlternateSearch
 		return DbServiceUtils
 				.convertRawToSimple(this.db.lookupChinese(allSubstrings))
 				.stream().map(simpleLookup -> new ChineseSummaryLookup(simpleLookup, this.rankBasedOnOriginalFrontToBack(simpleLookup.getChinese())))
-				.collect(Collectors.toCollection(ArrayList::new));
+				.toList();
 	}
 
 	@Override

@@ -11,7 +11,7 @@ public class GenerateSubstrings
 	{
 		// To generate all possible substrings, you will get the original string itself. Don't return that entry.
 		final List<String> results = GenerateSubstrings.generateSubstringsReal(saying);
-		return results.stream().filter(substring -> !substring.equals(saying)).collect(Collectors.toCollection(ArrayList::new));
+		return results.stream().filter(substring -> !substring.equals(saying)).toList();
 	}
 
 	private static List<String> generateSubstringsReal(String saying)
