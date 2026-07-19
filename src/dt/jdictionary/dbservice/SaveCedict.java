@@ -60,7 +60,7 @@ public class SaveCedict
 	private List<RawSubstringRow> fillSubstrings(List<SimpleLookup> dictionary)
 	{
 		final List<SimpleLookup> substringEntries = dictionary.stream()
-			.filter(entry -> entry.getZh().length() > 1 && ChineseText.allChinese(entry.getZh()))
+			.filter(entry -> ChineseText.trueLength(entry.getZh()) > 1 && ChineseText.allChinese(entry.getZh()))
 			.toList();
 
 		final Set<RawSubstringRow> result = new HashSet<>();

@@ -23,7 +23,8 @@ public class SameFrontSearch implements AlternateSearch
 	@Override
 	public List<ChineseSummaryLookup> trySearch() throws SQLException
 	{
-		final String firstChar = Character.toString(this.zh.charAt(0));
+		final int[] codepoints = this.zh.codePoints().toArray();
+		final String firstChar = Character.toString(codepoints[0]);
 		final List<RawDictionaryRow> rawResults = this.db.lookupRelatedWord(firstChar, RelatedChar.SAME_FRONT);
 		return DbServiceUtils.convertRawToSimple(rawResults);
 	}

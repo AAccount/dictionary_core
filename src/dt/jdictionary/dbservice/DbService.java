@@ -160,7 +160,7 @@ public class DbService
 		if(!substrings.isEmpty())
 		{
 			final List<String> substringHits = substrings.stream()
-				.filter(substringEntry -> substringEntry.getChinese().codePointCount(0, substringEntry.getChinese().length()) > 1)
+				.filter(substringEntry -> ChineseText.trueLength(substringEntry.getChinese()) > 1)
 				.map(ChineseSummaryLookup::getChinese)
 				.toList();
 			hits.addAll(substringHits);

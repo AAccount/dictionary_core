@@ -1,8 +1,8 @@
 package dt.jdictionary.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class GenerateSubstrings
 {
@@ -10,24 +10,28 @@ public class GenerateSubstrings
 	public static List<String> generateSubstrings(String saying)
 	{
 		// To generate all possible substrings, you will get the original string itself. Don't return that entry.
-		final List<String> results = GenerateSubstrings.generateSubstringsReal(saying);
+		final int[] codepoints = saying.codePoints().toArray();
+		final List<String> results = GenerateSubstrings.generateSubstringsReal(codepoints).stream()
+			.map(cps -> new String(cps, 0, cps.length-1))
+			.toList();
 		return results.stream().filter(substring -> !substring.equals(saying)).toList();
 	}
 
-	private static List<String> generateSubstringsReal(String saying)
+	private static List<int[]> generateSubstringsReal(int[] codepoints)
 	{
 		final int MINIMUM_USEABLE_STRING = 1;
-		if(saying.length() < MINIMUM_USEABLE_STRING)
+		if(codepoints.length == MINIMUM_USEABLE_STRING)
 		{
-			return new ArrayList<>();
+			return List.of(codepoints);
 		}
 	
-		final List<String> result = new ArrayList<>();
-		for(int i = 1; i <= saying.length(); i++)
+		final List<int[]> result = new ArrayList<>();
+		for(int i = 1; i <= codepoints.length; i++)
 		{
-			result.add(saying.substring(0, i));
+			result.add(Arrays.copyOfRange(codepoints, 0, i));
 		}
-		result.addAll(generateSubstringsReal(saying.substring(1)));
+
+		result.addAll(generateSubstringsReal(Arrays.copyOfRange(codepoints, 1, codepoints.length)));
 		return result;
 	}
 
