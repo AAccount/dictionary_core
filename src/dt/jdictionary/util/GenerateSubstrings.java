@@ -12,7 +12,7 @@ public class GenerateSubstrings
 		// To generate all possible substrings, you will get the original string itself. Don't return that entry.
 		final int[] codepoints = saying.codePoints().toArray();
 		final List<String> results = GenerateSubstrings.generateSubstringsReal(codepoints).stream()
-			.map(cps -> new String(cps, 0, cps.length-1))
+			.map(cps -> new String(cps, 0, cps.length))
 			.toList();
 		return results.stream().filter(substring -> !substring.equals(saying)).toList();
 	}
