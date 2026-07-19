@@ -102,11 +102,11 @@ public class DbRepoCache
 	private String stringMergedKey(String[] strings)
 	{
 		final String STRING_DELIM = "‱";
-		String result = "";
+		final StringBuilder sb = new StringBuilder();
 		for(final String string : strings)
 		{
-			result = result + string + STRING_DELIM;
+			sb.append(string).append(STRING_DELIM);
 		}
-		return result;
+		return sb.toString();
 	}
 }

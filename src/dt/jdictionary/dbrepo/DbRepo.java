@@ -319,8 +319,9 @@ public class DbRepo
 			return cached.get();
 		}
 
-		String zhSimplified = "";
-		final String inQuestionMarks = "?, ".repeat(zh.length());
+		final int[] zhCodePoints = zh.codePoints().toArray();
+		final StringBuilder zhSimplified = new StringBuilder();
+		final String inQuestionMarks = "?, ".repeat(zhCodePoints.length);
 		final String sql = String.format(
 				"select * from %s where %s in (" + inQuestionMarks.substring(0, inQuestionMarks.length() - 2) + ")",
 				Tables.TABLE_SIMPLIFIED, Columns.COL_OG);
@@ -328,9 +329,9 @@ public class DbRepo
 		final Map<String, String> charMapper = new HashMap<>();
 		try(final PreparedStatement pst = db.prepareStatement(sql))
 		{
-			for (int pstIndex = 0; pstIndex < zh.length(); pstIndex++)
+			for (int pstIndex = 0; pstIndex < zhCodePoints.length; pstIndex++)
 			{
-				pst.setString(pstIndex + 1, Character.toString(zh.charAt(pstIndex)));
+				pst.setString(pstIndex + 1, Character.toString(zhCodePoints[pstIndex]));
 			}
 
 			try(final ResultSet results = pst.executeQuery())
@@ -344,15 +345,17 @@ public class DbRepo
 			}
 		}
 
-		for (final char stringChar : zh.toCharArray())
+		for (final int codepoint : zhCodePoints)
 		{
-			final String charAsString = Character.toString(stringChar);
+			final String charAsString = Character.toString(codepoint);
 			final String resultchar = charMapper.keySet().contains(charAsString) ? charMapper.get(charAsString)
 						: charAsString;
-				zhSimplified = zhSimplified + resultchar;
+				zhSimplified.append(resultchar);
 		}
-		DbRepoCache.getInstance().setSimplfiedCache(zh, zhSimplified);
-		return zhSimplified;
+
+		final String result = zhSimplified.toString();
+		DbRepoCache.getInstance().setSimplfiedCache(zh, result);
+		return result;
 	}
 
 	public List<String> lookupMeasureWords(String zh) throws SQLException
