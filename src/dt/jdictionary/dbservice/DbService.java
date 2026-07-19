@@ -92,7 +92,7 @@ public class DbService
 		{
 			try
 			{
-				saveChineseSeachHits(directResults.join(), supplementaries.get(SubstringSearch.LOOKUP_NAME));
+				saveChineseSearchHits(directResults.join(), supplementaries.get(SubstringSearch.LOOKUP_NAME));
 			}
 			catch(Exception e)
 			{
@@ -149,7 +149,7 @@ public class DbService
 		}
 	}
 	
-	private void saveChineseSeachHits(ChineseDefinitionLookup definitionLookup, List<ChineseSummaryLookup> substrings) throws Exception
+	private void saveChineseSearchHits(ChineseDefinitionLookup definitionLookup, List<ChineseSummaryLookup> substrings) throws Exception
 	{
 		final List<String> hits = new ArrayList<>();
 		if(!definitionLookup.getResults().isEmpty())
@@ -160,8 +160,9 @@ public class DbService
 		if(!substrings.isEmpty())
 		{
 			final List<String> substringHits = substrings.stream()
-				.filter(substringEntry -> ChineseText.trueChars(substringEntry.getChinese()).size() > 1)
-				.map(ChineseSummaryLookup::getChinese).toList();
+				.filter(substringEntry -> substringEntry.getChinese().codePointCount(0, substringEntry.getChinese().length()) > 1)
+				.map(ChineseSummaryLookup::getChinese)
+				.toList();
 			hits.addAll(substringHits);
 		}
 		db.saveHits(hits);

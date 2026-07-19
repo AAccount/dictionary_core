@@ -27,8 +27,8 @@ public class TypoSearch implements AlternateSearch
 	@Override
 	public List<ChineseSummaryLookup> trySearch() throws SQLException
 	{
-		final List<String> trueChars = ChineseText.trueChars(this.zh);
-		final List<List<String>> normalizedPinyins = findPinyinForZh(trueChars);
+		final List<String> chars = ChineseText.charsByCodepoint(this.zh);
+		final List<List<String>> normalizedPinyins = findPinyinForZh(chars);
 		if(this.zh.length() != normalizedPinyins.size())
 		{
 			return new ArrayList<>();
@@ -38,7 +38,7 @@ public class TypoSearch implements AlternateSearch
 		final List<ChineseSummaryLookup> candidates = DbServiceUtils.convertRawToSimple(this.db.findByNormalizedPinyin(permutations));
 
 		return candidates.stream()
-				.map(candidate -> new ChineseSummaryLookup(candidate, pinyinLookupSimilarity(candidate, trueChars)))
+				.map(candidate -> new ChineseSummaryLookup(candidate, pinyinLookupSimilarity(candidate, chars)))
 				.filter(candidate -> candidate.getRank() >0 && candidate.getRank() < this.zh.length())
 				.toList();
 	}
@@ -46,9 +46,9 @@ public class TypoSearch implements AlternateSearch
 	private int pinyinLookupSimilarity(ChineseSummaryLookup candidate, List<String> targetChars)
 	{
 		int similarity = 0;
-		final List<String> candidateTrueChars = ChineseText.trueChars(candidate.getChinese());
+		final List<String> chars = ChineseText.charsByCodepoint(candidate.getChinese());
 		final Set<String> candidateSet = new HashSet<>();
-		candidateTrueChars.stream().forEach(candidateChar -> candidateSet.add(candidateChar));
+		chars.stream().forEach(candidateChar -> candidateSet.add(candidateChar));
 		for(final String targetChar : targetChars)
 		{
 			if(candidateSet.contains(targetChar))

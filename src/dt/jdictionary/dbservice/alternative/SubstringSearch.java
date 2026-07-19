@@ -46,17 +46,17 @@ public class SubstringSearch implements AlternateSearch
 	private Map<String, Double> generateFrontToBackRanking(String input)
 	{
 		final Map<String, Double> result = new HashMap<>();
-		final List<String> trueChars = ChineseText.trueChars(input);
-		for(int i=0; i<trueChars.size(); i++)
+		final List<String> chars = ChineseText.charsByCodepoint(input);
+		for(int i=0; i<chars.size(); i++)
 		{
-			final String singleChar = trueChars.get(i);
-			result.put(singleChar, 1.0*(trueChars.size() - i));
+			final String singleChar = chars.get(i);
+			result.put(singleChar, 1.0*(chars.size() - i));
 		}
 		return result;
 	}
 	
 	private double rankBasedOnOriginalFrontToBack(String resultZh)
 	{
-		return ChineseText.trueChars(resultZh).stream().reduce(0.0, (acc, singleChar) -> acc + this.frontToBackRanking.get(singleChar), Double::sum);
+		return ChineseText.charsByCodepoint(resultZh).stream().reduce(0.0, (acc, singleChar) -> acc + this.frontToBackRanking.get(singleChar), Double::sum);
 	}
 }

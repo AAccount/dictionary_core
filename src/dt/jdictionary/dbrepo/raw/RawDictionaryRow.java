@@ -21,9 +21,10 @@ public class RawDictionaryRow
 		this.pinyinNormalized = ChineseText.normalizePinyin(pinyin);
 		this.singleDefinition = null;
 		this.rank = rank;
-		final List<String> trueChars = ChineseText.trueChars(zh);
-		this.firstChar = trueChars.size() > 1 ? trueChars.get(0) : null;
-		this.lastChar = trueChars.size() > 1 ? trueChars.get(trueChars.size()-1) : null;
+
+		final int[] codepoints = zh.codePoints().toArray();
+		this.firstChar = codepoints.length > 1 ? Character.toString(codepoints[0]) : null;
+		this.lastChar = codepoints.length > 1 ? Character.toString(codepoints[codepoints.length-1]) : null;
 	}
 
 	public RawDictionaryRow(String zh, String pinyin, String pinyinNormalized, String singleDefinition, String firstChar, String lastChar, double rank) 

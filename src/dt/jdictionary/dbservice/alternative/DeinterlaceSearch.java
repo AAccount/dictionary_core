@@ -34,12 +34,12 @@ public class DeinterlaceSearch implements AlternateSearch
 			return new ArrayList<>();
 		}
 
-		final List<String> trueChars = ChineseText.trueChars(this.zh);
+		final List<String> chars = ChineseText.charsByCodepoint(zh);
 		final List<String> candidates = new ArrayList<String>();
-		candidates.add(trueChars.get(0) + trueChars.get(2));
-		if(trueChars.size() == MAX_DEINTERLACE)
+		candidates.add(chars.get(0) + chars.get(2));
+		if(chars.size() == MAX_DEINTERLACE)
 		{
-			candidates.add(trueChars.get(1) + trueChars.get(3));
+			candidates.add(chars.get(1) + chars.get(3));
 		}
 		return DbServiceUtils.convertRawToSimple(this.db.lookupChinese(candidates));
 	}
