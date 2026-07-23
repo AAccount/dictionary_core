@@ -74,29 +74,48 @@ public class RawDictionaryRow
 	}
 
 	@Override
-	public int hashCode()
-	{
-		return toString().hashCode();
-	}
-
-	@Override
 	public String toString()
 	{
 		return "RawDictionaryRow [zh=" + zh + ", pinyin=" + pinyin + ", singleDefinition=" + singleDefinition + ", rank=" + rank + "]";
 	}
 
 	@Override
-	public boolean equals(Object obj)
+	public int hashCode() 
 	{
-		if(obj == null || !obj.getClass().equals(this.getClass()))
-		{
-			return false;
-		}
-		
-		final RawDictionaryRow casted = (RawDictionaryRow)obj;
-		return 
-			casted.zh.equals(this.zh) && 
-			casted.pinyin.equals(this.pinyin) && 
-			casted.singleDefinition.equals(this.singleDefinition);
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((zh == null) ? 0 : zh.hashCode());
+		result = prime * result + ((pinyin == null) ? 0 : pinyin.hashCode());
+		return result;
 	}
+
+	@Override
+	public boolean equals(Object obj) 
+	{
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		RawDictionaryRow other = (RawDictionaryRow) obj;
+		if (zh == null) 
+		{
+			if (other.zh != null)
+				return false;
+		} 
+		else if (!zh.equals(other.zh))
+			return false;
+		
+		if (pinyin == null) 
+		{
+			if (other.pinyin != null)
+				return false;
+		} 
+		else if (!pinyin.equals(other.pinyin))
+			return false;
+		return true;
+	}
+
+	
 }
