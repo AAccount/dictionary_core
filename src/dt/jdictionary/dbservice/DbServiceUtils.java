@@ -21,7 +21,7 @@ public class DbServiceUtils
 			{
 				rawToSb.put(raw, new StringBuilder());
 			}
-			rawToSb.get(raw).append(raw.getSingleDefinition()).append(" ");
+			rawToSb.get(raw).append(raw.getSingleDefinition()).append("/ ");
 
 			final double rank = rawToRank.getOrDefault(raw, 0.0);
 			rawToRank.put(raw, Math.max(rank, raw.getRank()));
