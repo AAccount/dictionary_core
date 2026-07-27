@@ -43,8 +43,8 @@ public class DbRepo
 
 	public DbRepo() throws SQLException, ClassNotFoundException
 	{
-		// final String sqlitePath = System.getProperty("user.home") + "/Programs/mdbg2_1.sqlite";
-		final String sqlitePath = "/tmp/mdbg2_1.sqlite";
+		final String sqlitePath = System.getProperty("user.home") + "/Programs/mdbg2_1.sqlite";
+		// final String sqlitePath = "/tmp/mdbg2_1.sqlite";
 		Class.forName("org.sqlite.JDBC");
 		this.db = DriverManager.getConnection("jdbc:sqlite:"+sqlitePath);
 		db.setAutoCommit(false);

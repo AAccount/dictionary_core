@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
+
 import dt.cedict.CedictDump;
 import dt.cedict.MeasureWords;
 import dt.cedict.SimpleLookup;
@@ -17,10 +19,11 @@ import dt.jdictionary.dbrepo.raw.RawSimplifiedRow;
 import dt.jdictionary.dbrepo.raw.RawSubstringRow;
 import dt.jdictionary.util.GenerateSubstrings;
 import dt.util.ChineseText;
-import dt.util.Debug;
 
 public class SaveCedict
 {
+		private static final Logger logger = Logger.getLogger(SaveCedict.class.getName());
+
 	private static final String PROGRESS_DESC = "Saving to disk";
 	
 	private final DbRepo db;
@@ -44,7 +47,7 @@ public class SaveCedict
 	{
 		if(this.dictionary.size() == 0)
 		{
-			Debug.logTimestamp("Empty dump. Don't wipe!");
+			logger.info("Empty dump. Don't wipe!");
 			this.externalListener.onFractionalProgress(PROGRESS_DESC, 1, 1);
 			return;
 		}

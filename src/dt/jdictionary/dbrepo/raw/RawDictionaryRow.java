@@ -1,7 +1,5 @@
 package dt.jdictionary.dbrepo.raw;
 
-import java.util.List;
-
 import dt.util.ChineseText;
 
 public class RawDictionaryRow 

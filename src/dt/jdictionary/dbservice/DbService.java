@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Logger;
+
 import dt.cedict.CedictDump;
 import dt.jdictionary.ChineseDefinitionLookup;
 import dt.jdictionary.ChineseSummaryLookup;
@@ -25,10 +27,11 @@ import dt.jdictionary.dbservice.alternative.SubstringOfSearch;
 import dt.jdictionary.dbservice.alternative.SubstringSearch;
 import dt.jdictionary.dbservice.alternative.TypoSearch;
 import dt.jdictionary.util.GenerateCombinations;
-import dt.util.Debug;
 
 public class DbService 
 {
+	private static final Logger logger = Logger.getLogger(DbService.class.getName());
+
 	private final DbRepo db;
 	private final ExecutorService readExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	private final ExecutorService writeExecutor = Executors.newSingleThreadExecutor();
@@ -40,7 +43,7 @@ public class DbService
 
 	public ExhaustiveChineseLookup lookupChinese(String chinese, boolean shouldSave)
 	{
-		Debug.logTimestamp("start chinese lookup");
+		logger.info("start chinese lookup");
 		final List<CompletableFuture> allFutures = new ArrayList<>();
 		final CompletableFuture<ChineseDefinitionLookup> directResults = CompletableFuture
 			.supplyAsync(() -> {
@@ -103,7 +106,7 @@ public class DbService
 
 		}, writeExecutor);
 		final ExhaustiveChineseLookup exhaustiveLookup = assembleResults.join();
-		Debug.logTimestamp("done chinese lookup");
+		logger.info("done chinese lookup");
 		return exhaustiveLookup;
 	}
 	
@@ -166,7 +169,7 @@ public class DbService
 	
 	public Map<String, List<ChineseSummaryLookup>> lookupEnglish(String en)
 	{
-		Debug.logTimestamp("english start");
+		logger.info("english start");
 
 		final Map<String, CompletableFuture<List<ChineseSummaryLookup>>> wordFutures= new HashMap<>();
 		final List<CompletableFuture<List<ChineseSummaryLookup>>> futures = new ArrayList<>();
@@ -196,7 +199,7 @@ public class DbService
 			final List<ChineseSummaryLookup> singleResult = wordFutures.get(word).join();
 			result.put(word, singleResult);
 		}
-		Debug.logTimestamp("english end");
+		logger.info("english end");
 
 		return findUseableCombinations(result);
 	}
