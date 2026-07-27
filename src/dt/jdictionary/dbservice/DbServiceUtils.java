@@ -39,7 +39,12 @@ public class DbServiceUtils
 	
 	public static List<ChineseSummaryLookup> rerank(List<ChineseSummaryLookup> results, Map<String, Long> pastHits)
 	{
-		return results.stream().map(lookup -> rerankSingle(lookup, pastHits)).toList();
+		final List<ChineseSummaryLookup> out = new ArrayList<>();
+		for(final ChineseSummaryLookup summary : results)
+		{
+			out.add(rerankSingle(summary, pastHits));
+		}
+		return out;
 	}
 	
 	private static ChineseSummaryLookup rerankSingle(ChineseSummaryLookup lookup, Map<String, Long> pastHits)

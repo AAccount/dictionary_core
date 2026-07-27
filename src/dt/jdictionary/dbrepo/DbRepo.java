@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import dt.cedict.SimpleLookup;
 import dt.jdictionary.dbrepo.raw.Columns;
 import dt.jdictionary.dbrepo.raw.DbRepoCache;
@@ -28,7 +27,6 @@ import dt.jdictionary.dbrepo.raw.RawSimplifiedRow;
 import dt.jdictionary.dbrepo.raw.RawSubstringRow;
 import dt.jdictionary.dbrepo.raw.RelatedChar;
 import dt.jdictionary.dbrepo.raw.Tables;
-import dt.util.ListUtils;
 
 public class DbRepo
 {
@@ -45,7 +43,8 @@ public class DbRepo
 
 	public DbRepo() throws SQLException, ClassNotFoundException
 	{
-		final String sqlitePath = System.getProperty("user.home") + "/Programs/mdbg2_1.sqlite";
+		// final String sqlitePath = System.getProperty("user.home") + "/Programs/mdbg2_1.sqlite";
+		final String sqlitePath = "/tmp/mdbg2_1.sqlite";
 		Class.forName("org.sqlite.JDBC");
 		this.db = DriverManager.getConnection("jdbc:sqlite:"+sqlitePath);
 		db.setAutoCommit(false);
@@ -175,14 +174,15 @@ public class DbRepo
 		DbRepoCache.getInstance().wipe();
 	}
 	
-	public void saveHits(List<String> hits) throws SQLException
+	public void saveHits(List<String> hits, boolean validateAgainstDictionary) throws SQLException
 	{
+		final List<String> entries = validateAgainstDictionary ? filterWordsToKnown(hits) : hits;
 		final String sql = String.format("INSERT INTO %s (%s, %s) VALUES (?,?)", Tables.TABLE_PASTHITS, Columns.COL_ZH, Columns.COL_TIMESTAMP);
 		try(final PreparedStatement pst = db.prepareStatement(sql))
 		{
-			for (final String hit : hits)
+			for (final String entry : entries)
 			{
-				pst.setString(1, hit);
+				pst.setString(1, entry);
 				pst.setString(2, dateFormatter.format(new Date()));
 				pst.addBatch();
 			}
@@ -190,6 +190,17 @@ public class DbRepo
 		}
 		db.commit();
 
+	}
+
+	private List<String> filterWordsToKnown(List<String> words) throws SQLException
+	{
+		final List<RawDictionaryRow> rawDictionaryRows = lookupChinese(words);
+		final List<String> results = new ArrayList<>();
+		for(final RawDictionaryRow row : rawDictionaryRows)
+		{
+			results.add(row.getZh());
+		}
+		return results;
 	}
 	
 	public Map<String, Long> lookupPastHits(List<String> candidates) throws SQLException, ParseException
