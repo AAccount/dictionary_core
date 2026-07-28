@@ -47,6 +47,15 @@ public class SimplifiedSearch implements AlternateSearch
 			}
 			partialResult = nextRow;
 		}
+
+		// For characters with no simplification, dbrepo stores a char=List.of(itself) entry
+		// to prevent always having to go to the db only to find out there isn't one.
+		// This means explode combinations may accidentally reproduce the same string as this.chinese.
+		// Filter out that result.
+		if(partialResult.size() == 1 && partialResult.get(0).equals(chinese))
+		{
+			return List.of();
+		}
 		return partialResult;
 	}
 
