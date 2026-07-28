@@ -74,7 +74,7 @@ public class TypoSearch implements AlternateSearch
 		final List<List<String>> result = new ArrayList<>();
 		for(final String singleChar : chars)
 		{
-			result.add(new ArrayList<String>(pinyinMap.get(singleChar)));
+			result.add(new ArrayList<String>(pinyinMap.getOrDefault(singleChar, Set.of())));
 		}
 		return result;
 	}
