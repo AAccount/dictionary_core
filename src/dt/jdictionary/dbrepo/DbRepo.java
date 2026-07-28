@@ -267,10 +267,10 @@ public class DbRepo
 		final String repeaterRawString = "?, ".repeat(zhStrings.size());
 		final String repeaterString = repeaterRawString.substring(0, repeaterRawString.length() - 2);
 		final String sql = DictionaryBaseSql + " " + column + " in (" + repeaterString + ")";
-		final Optional<List<RawDictionaryRow>> cached = DbRepoCache.getInstance().getTableCache(sql, zhsStringsKeyString);
-		if(cached.isPresent())
+		final List<RawDictionaryRow> cached = DbRepoCache.getInstance().getTableCache(sql, zhsStringsKeyString);
+		if(cached != null)
 		{
-			return cached.get();
+			return cached;
 		}
 
 		final List<RawDictionaryRow> rawDbRows = new ArrayList<>();
@@ -293,10 +293,10 @@ public class DbRepo
 
 	private List<RawDictionaryRow> lookupDictionaryTable(String sql, String target) throws SQLException
 	{
-		final Optional<List<RawDictionaryRow>> cached = DbRepoCache.getInstance().getTableCache(sql, target);
-		if(cached.isPresent())
+		final List<RawDictionaryRow> cached = DbRepoCache.getInstance().getTableCache(sql, target);
+		if(cached != null)
 		{
-			return cached.get();
+			return cached;
 		}
 
 		final List<RawDictionaryRow> rawDbRows = new ArrayList<>();
@@ -330,12 +330,17 @@ public class DbRepo
 		return rawDbRows;
 	}
 
+	public Map<String, List<String>> reverseSimplified(List<String> characters)
+	{
+		return null;
+	}
+
 	public String lookupSimplified(String zh) throws SQLException
 	{
-		final Optional<String> cached = DbRepoCache.getInstance().getSimplifiedCache(zh);
-		if(cached.isPresent())
+		final String cached = DbRepoCache.getInstance().getSimplifiedCache(zh);
+		if(cached != null)
 		{
-			return cached.get();
+			return cached;
 		}
 
 		final int[] zhCodePoints = zh.codePoints().toArray();
@@ -379,10 +384,10 @@ public class DbRepo
 
 	public List<String> lookupMeasureWords(String zh) throws SQLException
 	{
-		final Optional<List<String>> cached = DbRepoCache.getInstance().getMeasureWordCache(zh);
-		if(cached.isPresent())
+		final List<String> cached = DbRepoCache.getInstance().getMeasureWordCache(zh);
+		if(cached != null)
 		{
-			return cached.get();
+			return cached;
 		}
 
 		final List<String> measureWords = new ArrayList<>();
@@ -443,10 +448,10 @@ public class DbRepo
 
 	private List<String> getListOfString(String sql, String search, String column) throws SQLException
 	{
-		final Optional<List<String>> cached = DbRepoCache.getInstance().getListOfStringsCache(sql, search, column);
-		if(cached.isPresent())
+		final List<String> cached = DbRepoCache.getInstance().getListOfStringsCache(sql, search, column);
+		if(cached != null)
 		{
-			return cached.get();
+			return cached;
 		}
 
 		final List<String> result = new ArrayList<>();
