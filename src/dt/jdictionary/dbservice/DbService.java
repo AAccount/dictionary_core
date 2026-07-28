@@ -27,6 +27,7 @@ import dt.jdictionary.dbservice.alternative.SubstringOfSearch;
 import dt.jdictionary.dbservice.alternative.SubstringSearch;
 import dt.jdictionary.dbservice.alternative.TypoSearch;
 import dt.jdictionary.util.GenerateCombinations;
+import dt.util.LogUtils;
 
 public class DbService 
 {
@@ -43,7 +44,7 @@ public class DbService
 
 	public ExhaustiveChineseLookup lookupChinese(String chinese, boolean shouldSave)
 	{
-		logger.info("start chinese lookup");
+		logger.info("start chinese lookup of " + chinese);
 		final List<CompletableFuture> allFutures = new ArrayList<>();
 		final CompletableFuture<ChineseDefinitionLookup> directResults = CompletableFuture
 			.supplyAsync(() -> {
@@ -53,6 +54,7 @@ public class DbService
 				} 
 				catch (SQLException e) 
 				{
+					logger.severe("problems looking up the chinese definition\n" + LogUtils.printStackTrace(e));
 					throw new RuntimeException(e.getLocalizedMessage(), e);
 				}}, readExecutor)
 			.exceptionally(ex -> {
@@ -79,6 +81,7 @@ public class DbService
 					} 
 					catch (SQLException e) 
 					{
+						logger.severe("problems with alternate search " + alt.LOOKUP_NAME() + "\n" + LogUtils.printStackTrace(e));
 						throw new RuntimeException(e.getLocalizedMessage(), e);
 					}}, readExecutor)
 				.exceptionally(ex -> {
@@ -106,7 +109,7 @@ public class DbService
 
 		}, writeExecutor);
 		final ExhaustiveChineseLookup exhaustiveLookup = assembleResults.join();
-		logger.info("done chinese lookup");
+		logger.info("done chinese lookup for " + chinese);
 		return exhaustiveLookup;
 	}
 	
@@ -118,14 +121,14 @@ public class DbService
 		}
 		
 		final List<String> candidates = results.stream().map(ChineseSummaryLookup::getChinese).toList();
-		Map<String, Long> pastHits;
 		try 
 		{
-			pastHits = db.lookupPastHits(candidates);
+			final Map<String, Long> pastHits = db.lookupPastHits(candidates);
 			return DbServiceUtils.rerank(results, pastHits);
 		} 
-		catch (SQLException | ParseException e) {
-			e.printStackTrace();
+		catch (SQLException | ParseException e) 
+		{
+			logger.severe("problems looking up past hits\n" + LogUtils.printStackTrace(e));
 			return results;
 		}
 	}
@@ -163,13 +166,13 @@ public class DbService
 		} 
 		catch (SQLException e) 
 		{
-			e.printStackTrace();
+			logger.severe("couldn't save search hits\n" + LogUtils.printStackTrace(e));
 		}
 	}
 	
 	public Map<String, List<ChineseSummaryLookup>> lookupEnglish(String en)
 	{
-		logger.info("english start");
+		logger.info("english start " + en);
 
 		final Map<String, CompletableFuture<List<ChineseSummaryLookup>>> wordFutures= new HashMap<>();
 		final List<CompletableFuture<List<ChineseSummaryLookup>>> futures = new ArrayList<>();
@@ -183,7 +186,7 @@ public class DbService
 				} 
 				catch (Exception e) 
 				{
-					e.printStackTrace();
+					logger.severe("problems looking up english word " + individualWord + "\n" + LogUtils.printStackTrace(e));
 					return List.of();
 				}
 			}, readExecutor);
@@ -199,7 +202,7 @@ public class DbService
 			final List<ChineseSummaryLookup> singleResult = wordFutures.get(word).join();
 			result.put(word, singleResult);
 		}
-		logger.info("english end");
+		logger.info("english end " + en);
 
 		return findUseableCombinations(result);
 	}
@@ -256,6 +259,7 @@ public class DbService
 			} 
 			catch (SQLException e) 
 			{
+				logger.severe("problems saving cedict parse\n" + LogUtils.printStackTrace(e));
 				throw new RuntimeException(e.getLocalizedMessage(), e);
 			}
 		}, writeExecutor);
@@ -271,6 +275,7 @@ public class DbService
 				} 
 				catch (SQLException e) 
 				{
+					logger.severe("problems saving a series of past hits\n" + LogUtils.printStackTrace(e));
 					throw new RuntimeException(e.getLocalizedMessage(), e);
 				}
 			}, writeExecutor);
@@ -291,10 +296,11 @@ public class DbService
 					} 
 					catch (SQLException e) 
 					{
+						logger.severe("problems searching compound words in sentence " + sentence + "\n" + LogUtils.printStackTrace(e));
 						throw new RuntimeException(e.getLocalizedMessage(), e);
 					}}, readExecutor)
 				.exceptionally(ex -> {
-					ex.printStackTrace();
+					logger.severe("other problems extracting compound words\n" + LogUtils.printStackTrace(ex));
 					return List.of();			
 				});
 				futures.add(future);	

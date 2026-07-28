@@ -1,5 +1,7 @@
 package dt.jdictionary.dbrepo;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -43,8 +45,14 @@ public class DbRepo
 
 	public DbRepo() throws SQLException, ClassNotFoundException
 	{
-		final String sqlitePath = System.getProperty("user.home") + "/Programs/mdbg2_1.sqlite";
+		final Path fullPath = Path.of(System.getProperty("user.home"), "Programs", "mdbg2_1.sqlite");
+		final File parentDir = fullPath.getParent().toFile();
+		if(!parentDir.exists()) 
+		{
+			parentDir.mkdirs(); 
+		}
 		// final String sqlitePath = "/tmp/mdbg2_1.sqlite";
+		final String sqlitePath = fullPath.toString();
 		Class.forName("org.sqlite.JDBC");
 		this.db = DriverManager.getConnection("jdbc:sqlite:"+sqlitePath);
 		db.setAutoCommit(false);
