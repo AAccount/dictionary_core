@@ -66,6 +66,16 @@ public class DbRepoCache
 		listOfStringsCache.put(key, results);
 	}
 
+	public List<String> getReverseSimplified(String simplified)
+	{
+		return reverseSimplified.getOrDefault(simplified, null);
+	}
+
+	public void setReverseSimplified(String simplified, List<String> traditionals)
+	{
+		reverseSimplified.put(simplified, traditionals);
+	}
+
 	public void wipe()
 	{
 		tableCache.clear();

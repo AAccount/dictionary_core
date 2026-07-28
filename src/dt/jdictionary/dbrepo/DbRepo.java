@@ -330,9 +330,63 @@ public class DbRepo
 		return rawDbRows;
 	}
 
-	public Map<String, List<String>> reverseSimplified(List<String> characters)
+	public Map<String, List<String>> reverseSimplified(List<String> characters) throws SQLException
 	{
-		return null;
+		final Map<String, List<String>> reverseResults = new HashMap<>();
+		for(final String character : characters)
+		{
+			final List<String> cached = DbRepoCache.getInstance().getReverseSimplified(character);
+			if(cached != null)
+			{
+				reverseResults.put(character, cached);
+			}
+		}
+		if(reverseResults.size() == characters.size())
+		{
+			return reverseResults;
+		}
+
+		final String inQuestionMarks = "?, ".repeat(characters.size());
+		final String sql = String.format(
+				"select * from %s where %s in (" + inQuestionMarks.substring(0, inQuestionMarks.length() - 2) + ")",
+				Tables.TABLE_SIMPLIFIED, Columns.COL_SIMPLIFIED);	
+		try(final PreparedStatement pst = db.prepareStatement(sql))
+		{
+			for(int i=1; i<=characters.size(); i++)
+			{
+				pst.setString(i, characters.get(i-1));
+			}
+
+			try(final ResultSet results = pst.executeQuery())
+			{
+				while(results.next())
+				{
+					final String simplified = results.getString(Columns.COL_SIMPLIFIED);
+					final String og = results.getString(Columns.COL_OG);
+					if(!reverseResults.containsKey(simplified))
+					{
+						reverseResults.put(simplified, new ArrayList<>());
+					}
+					reverseResults.get(simplified).add(og);
+				}
+			}
+		}
+
+		for(final String character : characters)
+		{
+			if(!reverseResults.containsKey(character))
+			{
+				// this character is the same simplified and traditional
+				final List<String> nochange = List.of(character);
+				reverseResults.put(character, nochange);
+				DbRepoCache.getInstance().setReverseSimplified(character, nochange);
+			}
+			else
+			{
+				DbRepoCache.getInstance().setReverseSimplified(character, reverseResults.get(character));
+			}
+		}
+		return reverseResults;
 	}
 
 	public String lookupSimplified(String zh) throws SQLException
@@ -353,14 +407,14 @@ public class DbRepo
 		final Map<String, String> charMapper = new HashMap<>();
 		try(final PreparedStatement pst = db.prepareStatement(sql))
 		{
-			for (int pstIndex = 0; pstIndex < zhCodePoints.length; pstIndex++)
+			for(int pstIndex = 0; pstIndex < zhCodePoints.length; pstIndex++)
 			{
 				pst.setString(pstIndex + 1, Character.toString(zhCodePoints[pstIndex]));
 			}
 
 			try(final ResultSet results = pst.executeQuery())
 			{
-				while (results.next())
+				while(results.next())
 				{
 					final String simplified = results.getString(Columns.COL_SIMPLIFIED);
 					final String og = results.getString(Columns.COL_OG);

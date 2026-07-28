@@ -24,6 +24,7 @@ import dt.jdictionary.dbservice.alternative.AlternateSearch;
 import dt.jdictionary.dbservice.alternative.DeinterlaceSearch;
 import dt.jdictionary.dbservice.alternative.SameBackSearch;
 import dt.jdictionary.dbservice.alternative.SameFrontSearch;
+import dt.jdictionary.dbservice.alternative.SimplifiedSearch;
 import dt.jdictionary.dbservice.alternative.SubstringOfSearch;
 import dt.jdictionary.dbservice.alternative.SubstringSearch;
 import dt.jdictionary.dbservice.alternative.TypoSearch;
@@ -70,7 +71,8 @@ public class DbService
 			new SubstringSearch(chinese, db), 
 			new SubstringOfSearch(chinese, db), 
 			new DeinterlaceSearch(chinese, db), 
-			new TypoSearch(chinese, db)
+			new TypoSearch(chinese, db),
+			new SimplifiedSearch(chinese, db)
 		);
 		final List<CompletableFuture<List<ChineseSummaryLookup>>> altFutures = new ArrayList<>();
 		for(final AlternateSearch alt : alts)
