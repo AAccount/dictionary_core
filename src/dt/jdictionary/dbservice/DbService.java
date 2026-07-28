@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -52,12 +53,13 @@ public class DbService
 				{
 					return this.lookupChineseDefinition(chinese);
 				} 
-				catch (SQLException e) 
+				catch (Exception e) 
 				{
 					logger.severe("problems looking up the chinese definition\n" + LogUtils.printStackTrace(e));
 					throw new RuntimeException(e.getLocalizedMessage(), e);
 				}}, readExecutor)
 			.exceptionally(ex -> {
+				logger.severe("problems looking up the chinese definition\n" + LogUtils.printStackTrace(ex.getCause()));
 				return new ChineseDefinitionLookup(chinese, Map.of(), "", List.of());			
 			});
 		allFutures.add(directResults);
@@ -79,13 +81,13 @@ public class DbService
 					{
 						return alt.trySearch();
 					} 
-					catch (SQLException e) 
+					catch (Exception e) 
 					{
 						logger.severe("problems with alternate search " + alt.LOOKUP_NAME() + "\n" + LogUtils.printStackTrace(e));
 						throw new RuntimeException(e.getLocalizedMessage(), e);
 					}}, readExecutor)
 				.exceptionally(ex -> {
-					ex.printStackTrace();
+					logger.severe("problems with alternate search " + alt.LOOKUP_NAME() + "\n" + LogUtils.printStackTrace(ex.getCause()));
 					return List.of();			
 				});
 			altFutures.add(altFuture);
@@ -98,7 +100,7 @@ public class DbService
 			{
 				saveChineseSearchHits(directResults.join());
 			}
-			final Map<String, List<ChineseSummaryLookup>> altMap = new HashMap<>();
+			final Map<String, List<ChineseSummaryLookup>> altMap = new LinkedHashMap<>();
 			for(int i=0; i<altFutures.size(); i++)
 			{
 				final AlternateSearch searchObj = alts.get(i);
@@ -126,7 +128,7 @@ public class DbService
 			final Map<String, Long> pastHits = db.lookupPastHits(candidates);
 			return DbServiceUtils.rerank(results, pastHits);
 		} 
-		catch (SQLException | ParseException e) 
+		catch (Exception e) 
 		{
 			logger.severe("problems looking up past hits\n" + LogUtils.printStackTrace(e));
 			return results;
@@ -164,7 +166,7 @@ public class DbService
 		{
 			db.saveHits(hits, false);
 		} 
-		catch (SQLException e) 
+		catch (Exception e) 
 		{
 			logger.severe("couldn't save search hits\n" + LogUtils.printStackTrace(e));
 		}
@@ -257,7 +259,7 @@ public class DbService
 			{
 				new SaveCedict(db, dump, listener).save();
 			} 
-			catch (SQLException e) 
+			catch (Exception e) 
 			{
 				logger.severe("problems saving cedict parse\n" + LogUtils.printStackTrace(e));
 				throw new RuntimeException(e.getLocalizedMessage(), e);
@@ -273,7 +275,7 @@ public class DbService
 				{
 					db.saveHits(words, verifyInDictionary);
 				} 
-				catch (SQLException e) 
+				catch (Exception e) 
 				{
 					logger.severe("problems saving a series of past hits\n" + LogUtils.printStackTrace(e));
 					throw new RuntimeException(e.getLocalizedMessage(), e);
@@ -294,13 +296,13 @@ public class DbService
 					{
 						return new SubstringSearch(sentence, db).trySearch();
 					} 
-					catch (SQLException e) 
+					catch (Exception e) 
 					{
 						logger.severe("problems searching compound words in sentence " + sentence + "\n" + LogUtils.printStackTrace(e));
 						throw new RuntimeException(e.getLocalizedMessage(), e);
 					}}, readExecutor)
 				.exceptionally(ex -> {
-					logger.severe("other problems extracting compound words\n" + LogUtils.printStackTrace(ex));
+					logger.severe("other problems extracting compound words\n" + LogUtils.printStackTrace(ex.getCause()));
 					return List.of();			
 				});
 				futures.add(future);	
