@@ -1,9 +1,12 @@
 package dt.jdictionary.dbservice.alternative;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
 import dt.jdictionary.ChineseSummaryLookup;
 import dt.jdictionary.dbrepo.DbRepo;
 import dt.jdictionary.dbservice.DbServiceUtils;
@@ -31,7 +34,7 @@ public class SubstringSearch implements AlternateSearch
 		return DbServiceUtils
 				.convertRawToSimple(this.db.lookupChinese(allSubstrings))
 				.stream().map(simpleLookup -> new ChineseSummaryLookup(simpleLookup, this.rankBasedOnOriginalFrontToBack(simpleLookup.getChinese())))
-				.toList();
+				.collect(Collectors.toCollection(ArrayList::new));
 	}
 
 	@Override
