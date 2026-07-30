@@ -25,7 +25,7 @@ public class SimplifiedSearch implements AlternateSearch
 	public List<ChineseSummaryLookup> trySearch() throws SQLException 
 	{
 		final List<String> characters = ChineseText.charsByCodepoint(chinese);
-		final Map<String, List<String>> reverseMapping = db.reverseSimplified(characters);
+		final Map<String, List<String>> reverseMapping = db.lookupReverseSimplified(characters);
 		final List<String> allCombinations = explodeCombinations(characters, reverseMapping);
 		return DbServiceUtils.convertRawToSimple(db.lookupChinese(allCombinations));
 	}

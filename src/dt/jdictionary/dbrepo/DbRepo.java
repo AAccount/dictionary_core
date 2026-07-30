@@ -328,7 +328,7 @@ public class DbRepo
 		return rawDbRows;
 	}
 
-	public Map<String, List<String>> reverseSimplified(List<String> characters) throws SQLException
+	public Map<String, List<String>> lookupReverseSimplified(List<String> characters) throws SQLException
 	{
 		final Map<String, List<String>> reverseResults = new HashMap<>();
 		for(final String character : characters)
