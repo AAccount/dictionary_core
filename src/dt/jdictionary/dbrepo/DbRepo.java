@@ -461,15 +461,22 @@ public class DbRepo
 		return measureWords;
 	}
 
-	
 	public List<RawDictionaryRow> lookupRelatedWord(String zh, RelatedChar similarity) throws SQLException
 	{
 		final String column = similarity == RelatedChar.SAME_FRONT ? Columns.COL_FIRST_CHAR : Columns.COL_LAST_CHAR;
-		final String sql = DictionaryBaseSql + " " + column + " = ?";
-		return lookupDictionaryTable(sql, zh);
+		final String sqlOpt = String.format("""
+				select %s, %s, %s, group_concat(%s, ' / ') as %s, %s, %s, %s 
+				from %s join %s on %s.%s = %s.%s 
+				where %s = ?
+				group by %s
+		""", Columns.COL_ZH, Columns.COL_PINYIN, Columns.COL_PINYIN_NORM, Columns.COL_DEF, Columns.COL_DEF, Columns.COL_FIRST_CHAR, Columns.COL_LAST_CHAR, Columns.COL_RANK,
+		Tables.TABLE_ZHBASE, Tables.TABLE_ENGLISH, Tables.TABLE_ZHBASE, Columns.COL_ID, Tables.TABLE_ENGLISH, Columns.COL_ZHBASEID,
+		column,
+		Columns.COL_ID
+		);
+		return lookupDictionaryTable(sqlOpt, zh);
 	}
 
-	
 	public List<RawDictionaryRow> lookupEnglish(String en) throws SQLException
 	{
 		final String sql = String.format("""
