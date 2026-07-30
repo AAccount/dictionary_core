@@ -33,7 +33,7 @@ public class WordList
 			while (line != null)
 			{
 				final String cleaned = line.strip();
-				if(cleaned.length() > 1 && ChineseText.allChinese(cleaned)) // Past hits is intended to help prioritize compound words.
+				if(cleaned.length() > 1 && ChineseText.allChinese(cleaned, false)) // Past hits is intended to help prioritize compound words.
 				{
 					hashSet.add(cleaned);
 				}
