@@ -111,7 +111,7 @@ public class DbService
 				{
 					continue;
 				}
-				altMap.put(searchObj.LOOKUP_NAME(), rerankAlternates(searchObj.LOOKUP_NAME(), altResult));
+				altMap.put(searchObj.LOOKUP_NAME(), altResult);
 			}
 			return new ExhaustiveChineseLookup(directResults.join(), altMap);
 

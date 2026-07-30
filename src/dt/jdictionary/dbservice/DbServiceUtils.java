@@ -14,7 +14,6 @@ public class DbServiceUtils
 	public static List<ChineseSummaryLookup> convertRawToSimple(List<RawDictionaryRow> rawResults)
 	{
 		final Map<RawDictionaryRow, StringBuilder> rawToSb = new HashMap<>();
-		final Map<RawDictionaryRow, Double> rawToRank = new HashMap<>();
 		for(final RawDictionaryRow raw : rawResults)
 		{
 			if(!rawToSb.containsKey(raw))
@@ -23,8 +22,6 @@ public class DbServiceUtils
 			}
 			rawToSb.get(raw).append(raw.getSingleDefinition()).append("/ ");
 
-			final double rank = rawToRank.getOrDefault(raw, 0.0);
-			rawToRank.put(raw, Math.max(rank, raw.getRank()));
 		}
 
 		final List<ChineseSummaryLookup> result = new ArrayList<>();
@@ -32,7 +29,7 @@ public class DbServiceUtils
 		{
 			final StringBuilder sb = rawToSb.get(raw);
 			sb.setLength(sb.length()-1);
-			result.add(new ChineseSummaryLookup(raw.getZh(), raw.getPinyin(), sb.toString(), rawToRank.get(raw)));
+			result.add(new ChineseSummaryLookup(raw.getZh(), raw.getPinyin(), sb.toString(), raw.getRank()));
 		}
 		return result;
 	}

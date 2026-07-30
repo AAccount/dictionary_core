@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import dt.jdictionary.ChineseSummaryLookup;
 import dt.jdictionary.dbrepo.DbRepo;
@@ -39,7 +40,7 @@ public class TypoSearch implements AlternateSearch
 		return candidates.stream()
 				.map(candidate -> new ChineseSummaryLookup(candidate, pinyinLookupSimilarity(candidate, chars)))
 				.filter(candidate -> candidate.getRank() >0 && candidate.getRank() < this.zh.length())
-				.toList();
+				.collect(Collectors.toCollection(ArrayList::new));
 	}
 
 	private int pinyinLookupSimilarity(ChineseSummaryLookup candidate, List<String> targetChars)
