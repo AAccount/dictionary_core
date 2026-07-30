@@ -34,7 +34,6 @@ public class DbRepo
 	private Connection db;
 
 	private static final String dateTimeFormat = "yyyy-MM-dd HH:mm:ss.SSSS";
-	private static final DateFormat dateFormatter = new SimpleDateFormat(dateTimeFormat);
 	private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(dateTimeFormat);
 	private final String DictionaryBaseSql = String.format(
 		"select %s, %s, %s, %s, %s, %s, %s " + 
@@ -190,7 +189,7 @@ public class DbRepo
 			for (final String entry : entries)
 			{
 				pst.setString(1, entry);
-				pst.setString(2, dateFormatter.format(new Date()));
+				pst.setString(2, LocalDateTime.now().format(dateTimeFormatter));
 				pst.addBatch();
 			}
 			pst.executeBatch();
