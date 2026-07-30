@@ -107,6 +107,10 @@ public class DbService
 			{
 				final AlternateSearch searchObj = alts.get(i);
 				final List<ChineseSummaryLookup> altResult = altFutures.get(i).join();
+				if(altResult.isEmpty())
+				{
+					continue;
+				}
 				altMap.put(searchObj.LOOKUP_NAME(), rerankAlternates(searchObj.LOOKUP_NAME(), altResult));
 			}
 			return new ExhaustiveChineseLookup(directResults.join(), altMap);
