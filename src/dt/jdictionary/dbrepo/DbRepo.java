@@ -226,46 +226,6 @@ public class DbRepo
 		return results;
 	}
 	
-	public Map<String, Long> lookupPastHits(List<String> candidates) throws SQLException, ParseException
-	{
-		if(candidates.isEmpty())
-		{
-			return Map.of();
-		}
-		
-		final String repeaterRawString = "?, ".repeat(candidates.size());
-		final String repeaterString = repeaterRawString.substring(0, repeaterRawString.length() - 2);
-		final String sql = String.format("select * from %s where %s in (%s) order by %s desc", Tables.TABLE_PASTHITS, Columns.COL_ZH, repeaterString, Columns.COL_TIMESTAMP);
-
-		try(final PreparedStatement pst = db.prepareStatement(sql))
-		{
-			for (int i = 0; i < candidates.size(); i++)
-			{
-				pst.setString(i + 1, candidates.get(i));
-			}
-
-			try(final ResultSet results = pst.executeQuery())
-			{
-				return processRawPastHits(results);
-			}
-		}
-	}
-	
-	private Map<String, Long> processRawPastHits(ResultSet results) throws SQLException, ParseException
-	{
-		final Map<String, Long> pastHits = new HashMap<>();
-		while(results.next())
-		{
-			final String chinese = results.getString(Columns.COL_ZH);
-			final long timestamp = LocalDateTime.parse(results.getString(Columns.COL_TIMESTAMP), dateTimeFormatter)
-				.toEpochSecond(ZoneOffset.UTC);
-
-			pastHits.put(chinese, timestamp);
-		}
-		return pastHits;
-	}
-
-	
 	public List<RawDictionaryRow> lookupChinese(List<String> zhStrings) throws SQLException
 	{
 		return lookupChineseByColumn(Tables.TABLE_ZHBASE + "." +Columns.COL_ZH, zhStrings);
@@ -483,23 +443,6 @@ public class DbRepo
 	public List<RawDictionaryRow> lookupRelatedWord(String zh, RelatedChar similarity) throws SQLException
 	{
 		final String column = similarity == RelatedChar.SAME_FRONT ? Columns.COL_FIRST_CHAR : Columns.COL_LAST_CHAR;
-		// final String sqlOptRank = String.format("""
-		// 	select %s.%s, %s, %s, group_concat(%s, ' / ') as %s, %s, %s, max(%s, coalesce(max(unixepoch(%s.%s)), 0)) as %s
-		// 	from %s 
-		// 		join %s on %s.%s = %s.%s
-		// 		left join %s on %s.%s = %s.%s
-		// 	where %s = ?
-		// 	group by %s
-		// 	order by %s desc
-		// 	limit %s
-		// """, Tables.TABLE_ZHBASE, Columns.COL_ZH, Columns.COL_PINYIN, Columns.COL_PINYIN_NORM, Columns.COL_DEF, Columns.COL_DEF, Columns.COL_FIRST_CHAR, Columns.COL_LAST_CHAR, Columns.COL_RANK, Tables.TABLE_PASTHITS, Columns.COL_TIMESTAMP, Columns.COL_RANK,
-		// 	Tables.TABLE_ZHBASE,
-		// 	Tables.TABLE_ENGLISH, Tables.TABLE_ZHBASE, Columns.COL_ID, Tables.TABLE_ENGLISH, Columns.COL_ZHBASEID,
-		// 	Tables.TABLE_PASTHITS, Tables.TABLE_PASTHITS, Columns.COL_ZH, Tables.TABLE_ZHBASE, Columns.COL_ZH,
-		// 	column,
-		// 	Columns.COL_ID,
-		// 	Columns.COL_RANK,
-		// 	MAXIMUM_RESULTS);
 		final String where = column + " = ?";
 		List<RawDictionaryRow> result =  lookupDictionaryTable(RANKED_SQL(where), zh);
 		return result;
@@ -508,16 +451,25 @@ public class DbRepo
 	public List<RawDictionaryRow> lookupEnglish(String en) throws SQLException
 	{
 		final String sql = String.format("""
-			select %s, %s, %s, English.%s, %s, %s, %s.%s 
+			select %s.%s, %s, %s, English.%s, %s, %s, max(%s.%s, coalesce(max(unixepoch(%s.%s)), 0)) as %s 
 			from %s 
 				join %s on %s.%s = %s.%s 
 				join %s on %s.%s = %s.%s
-			where %s.%s match ?""",
-			Columns.COL_ZH, Columns.COL_PINYIN, Columns.COL_PINYIN_NORM, Columns.COL_DEF, Columns.COL_FIRST_CHAR, Columns.COL_LAST_CHAR, Tables.TABLE_ZHBASE, Columns.COL_RANK,
+				left join %s on %s.%s = %s.%s
+			where %s.%s match ?
+			group by %s
+			order by %s desc
+			limit %s
+		""",
+			Tables.TABLE_ZHBASE, Columns.COL_ZH, Columns.COL_PINYIN, Columns.COL_PINYIN_NORM, Columns.COL_DEF, Columns.COL_FIRST_CHAR, Columns.COL_LAST_CHAR, Tables.TABLE_ZHBASE, Columns.COL_RANK, Tables.TABLE_PASTHITS, Columns.COL_TIMESTAMP, Columns.COL_RANK,
 			Tables.TABLE_ZHBASE,
 			Tables.TABLE_ENGLISH_FTS5, Tables.TABLE_ZHBASE, Columns.COL_ID, Tables.TABLE_ENGLISH_FTS5, Columns.COL_ZHBASEID,
 			Tables.TABLE_ENGLISH, Tables.TABLE_ZHBASE, Columns.COL_ID, Tables.TABLE_ENGLISH, Columns.COL_ZHBASEID,
-			Tables.TABLE_ENGLISH_FTS5, Columns.COL_DEF);
+			Tables.TABLE_PASTHITS, Tables.TABLE_PASTHITS, Columns.COL_ZH, Tables.TABLE_ZHBASE, Columns.COL_ZH,
+			Tables.TABLE_ENGLISH_FTS5, Columns.COL_DEF,
+			Columns.COL_ID,
+			Columns.COL_RANK,
+			MAXIMUM_RESULTS);
 		return lookupDictionaryTable(sql, en);
 	}
 

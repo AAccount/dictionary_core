@@ -34,23 +34,23 @@ public class DbServiceUtils
 		return result;
 	}
 	
-	public static List<ChineseSummaryLookup> rerank(List<ChineseSummaryLookup> results, Map<String, Long> pastHits)
-	{
-		final List<ChineseSummaryLookup> out = new ArrayList<>();
-		for(final ChineseSummaryLookup summary : results)
-		{
-			out.add(rerankSingle(summary, pastHits));
-		}
-		return out;
-	}
+	// public static List<ChineseSummaryLookup> rerank(List<ChineseSummaryLookup> results, Map<String, Long> pastHits)
+	// {
+	// 	final List<ChineseSummaryLookup> out = new ArrayList<>();
+	// 	for(final ChineseSummaryLookup summary : results)
+	// 	{
+	// 		out.add(rerankSingle(summary, pastHits));
+	// 	}
+	// 	return out;
+	// }
 	
-	private static ChineseSummaryLookup rerankSingle(ChineseSummaryLookup lookup, Map<String, Long> pastHits)
-	{
-		final int HISTORY_RELEVANCE_MULTIPLIER = 10000; // Arbitrarily a 萬.
-		if(lookup.getRank() > 0 && pastHits.containsKey(lookup.getChinese())) // Blacklisted place names should stay that, way even if the place was seen in a text blob.
-		{
-			return new ChineseSummaryLookup(lookup, pastHits.get(lookup.getChinese()) * HISTORY_RELEVANCE_MULTIPLIER);
-		}
-		return lookup;
-	}
+	// private static ChineseSummaryLookup rerankSingle(ChineseSummaryLookup lookup, Map<String, Long> pastHits)
+	// {
+	// 	final int HISTORY_RELEVANCE_MULTIPLIER = 10000; // Arbitrarily a 萬.
+	// 	if(lookup.getRank() > 0 && pastHits.containsKey(lookup.getChinese())) // Blacklisted place names should stay that, way even if the place was seen in a text blob.
+	// 	{
+	// 		return new ChineseSummaryLookup(lookup, pastHits.get(lookup.getChinese()) * HISTORY_RELEVANCE_MULTIPLIER);
+	// 	}
+	// 	return lookup;
+	// }
 }

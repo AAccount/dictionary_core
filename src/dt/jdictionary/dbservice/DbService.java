@@ -121,26 +121,6 @@ public class DbService
 		return exhaustiveLookup;
 	}
 	
-	private List<ChineseSummaryLookup> rerankAlternates(String alternate, List<ChineseSummaryLookup> results)
-	{
-		if(alternate.equals(SubstringSearch.LOOKUP_NAME))
-		{
-			return results;
-		}
-		
-		final List<String> candidates = results.stream().map(ChineseSummaryLookup::getChinese).toList();
-		try 
-		{
-			final Map<String, Long> pastHits = db.lookupPastHits(candidates);
-			return DbServiceUtils.rerank(results, pastHits);
-		} 
-		catch (Exception e) 
-		{
-			logger.severe("problems looking up past hits\n" + LogUtils.printStackTrace(e));
-			return results;
-		}
-	}
-	
 	private ChineseDefinitionLookup lookupChineseDefinition(String zh) throws SQLException
 	{
 		final List<RawDictionaryRow> rawResults = db.lookupChinese(List.of(zh));
@@ -254,8 +234,7 @@ public class DbService
 		{
 			candidates.add(summary.getChinese());
 		}
-		final Map<String, Long> pastHits = db.lookupPastHits(candidates);
-		return DbServiceUtils.rerank(rawResults, pastHits);
+		return rawResults;
 	}
 
 	public CompletableFuture<Void> saveCedictDump(CedictDump dump, ProgressListener listener) throws Exception
