@@ -8,7 +8,7 @@ import java.util.Map;
 // Need to wrap all cache responses in a "response" object because sometimes null is the answer.
 public class DbRepoCache 
 {
-	private final Map<String, String> simplifiedCache = new HashMap<>();
+	private final Map<Integer, String> simplifiedCache = new HashMap<>();
 	private final Map<String, List<String>> measureWordCache = new HashMap<>();
 	private final Map<String, List<String>> listOfStringsCache = new HashMap<>();
 	private final Map<String, List<String>> reverseSimplified = new HashMap<>();
@@ -61,14 +61,14 @@ public class DbRepoCache
 		return tableColumnEntryCache.get(table).get(column).getOrDefault(columnValue, List.of());
 	}
 
-	public String getSimplifiedCache(String zh)
+	public String getSimplifiedCache(Integer codepoint)
 	{
-		return simplifiedCache.getOrDefault(zh, null);
+		return simplifiedCache.getOrDefault(codepoint, null);
 	}
 
-	public void setSimplfiedCache(String zh, String simplified)
+	public void setSimplfiedCache(Integer codepoint, String simplified)
 	{
-		simplifiedCache.put(zh, simplified);
+		simplifiedCache.put(codepoint, simplified);
 	}
 
 	public List<String> getMeasureWordCache(String zh)

@@ -195,7 +195,7 @@ public class DbRepo
 			vaccuum.execute("vacuum;");
 			db.setAutoCommit(false);
 		}
-		DbRepoCache.getInstance().wipe();
+		cache.wipe();
 	}
 	
 	public void saveHits(List<String> hits, boolean validateAgainstDictionary) throws SQLException
@@ -332,7 +332,7 @@ public class DbRepo
 		final Map<String, List<String>> reverseResults = new HashMap<>();
 		for(final String character : characters)
 		{
-			final List<String> cached = DbRepoCache.getInstance().getReverseSimplified(character);
+			final List<String> cached = cache.getReverseSimplified(character);
 			if(cached != null)
 			{
 				reverseResults.put(character, cached);
@@ -376,11 +376,11 @@ public class DbRepo
 				// this character is the same simplified and traditional
 				final List<String> nochange = List.of(character);
 				reverseResults.put(character, nochange);
-				DbRepoCache.getInstance().setReverseSimplified(character, nochange);
+				cache.setReverseSimplified(character, nochange);
 			}
 			else
 			{
-				DbRepoCache.getInstance().setReverseSimplified(character, reverseResults.get(character));
+				cache.setReverseSimplified(character, reverseResults.get(character));
 			}
 		}
 		return reverseResults;
@@ -388,25 +388,64 @@ public class DbRepo
 
 	public String lookupSimplified(String zh) throws SQLException
 	{
-		final String cached = DbRepoCache.getInstance().getSimplifiedCache(zh);
-		if(cached != null)
+		final int[] zhCodePoints = zh.codePoints().toArray();
+		final List<Integer> unCached = new ArrayList<>();
+		final Map<Integer, String> simplifiedMapping = new HashMap<>();
+		for(final int codepoint : zhCodePoints)
 		{
-			return cached;
+			final String cached = cache.getSimplifiedCache(codepoint);
+			if(cached != null)
+			{
+				simplifiedMapping.put(codepoint, cached);
+			}
+			else
+			{
+				unCached.add(codepoint);
+			}
+		}
+		logger.info("simplified cache for " + zh + " in cache: " + simplifiedMapping.size() + " not in cache: " + unCached.size());
+
+		if(!unCached.isEmpty())
+		{
+			final Map<Integer, String> dbLookups = simpliedFromDb(unCached);
+			for(final Integer codepoint : dbLookups.keySet())
+			{
+				final String simplified = dbLookups.get(codepoint);
+				simplifiedMapping.put(codepoint, simplified);
+				cache.setSimplfiedCache(codepoint, simplified);
+			}
+		}
+		
+		final StringBuilder zhSimplified = new StringBuilder();
+		for (final int codepoint : zhCodePoints)
+		{
+			final String resultchar = simplifiedMapping.getOrDefault(codepoint, Character.toString(codepoint));
+			zhSimplified.append(resultchar);
+
+			// To avoid relooking up characters with no simplified form, cheat and set the simplified as itself.
+			if(!simplifiedMapping.containsKey(codepoint))
+			{
+				cache.setSimplfiedCache(codepoint, Character.toString(codepoint));
+			}
 		}
 
-		final int[] zhCodePoints = zh.codePoints().toArray();
-		final StringBuilder zhSimplified = new StringBuilder();
-		final String inQuestionMarks = "?, ".repeat(zhCodePoints.length);
+		final String result = zhSimplified.toString();
+		return result;
+	}
+
+	private Map<Integer, String> simpliedFromDb(List<Integer> codepoints) throws SQLException
+	{
+		final String inQuestionMarks = "?, ".repeat(codepoints.size());
 		final String sql = String.format(
 				"select * from %s where %s in (" + inQuestionMarks.substring(0, inQuestionMarks.length() - 2) + ")",
 				Tables.TABLE_SIMPLIFIED, Columns.COL_OG);
 		
-		final Map<String, String> charMapper = new HashMap<>();
+		final Map<Integer, String> charMapper = new HashMap<>();
 		try(final PreparedStatement pst = db.prepareStatement(sql))
 		{
-			for(int pstIndex = 0; pstIndex < zhCodePoints.length; pstIndex++)
+			for(int pstIndex = 0; pstIndex < codepoints.size(); pstIndex++)
 			{
-				pst.setString(pstIndex + 1, Character.toString(zhCodePoints[pstIndex]));
+				pst.setString(pstIndex + 1, Character.toString(codepoints.get(pstIndex)));
 			}
 
 			try(final ResultSet results = pst.executeQuery())
@@ -415,27 +454,16 @@ public class DbRepo
 				{
 					final String simplified = results.getString(Columns.COL_SIMPLIFIED);
 					final String og = results.getString(Columns.COL_OG);
-					charMapper.put(og, simplified);
+					charMapper.put(og.codePointAt(0), simplified);
 				}
 			}
 		}
-
-		for (final int codepoint : zhCodePoints)
-		{
-			final String charAsString = Character.toString(codepoint);
-			final String resultchar = charMapper.keySet().contains(charAsString) ? charMapper.get(charAsString)
-						: charAsString;
-				zhSimplified.append(resultchar);
-		}
-
-		final String result = zhSimplified.toString();
-		DbRepoCache.getInstance().setSimplfiedCache(zh, result);
-		return result;
+		return charMapper;
 	}
 
 	public List<String> lookupMeasureWords(String zh) throws SQLException
 	{
-		final List<String> cached = DbRepoCache.getInstance().getMeasureWordCache(zh);
+		final List<String> cached = cache.getMeasureWordCache(zh);
 		if(cached != null)
 		{
 			return cached;
@@ -456,7 +484,7 @@ public class DbRepo
 				}
 			}
 		}
-		DbRepoCache.getInstance().setMeasureWordCache(zh, measureWords);
+		cache.setMeasureWordCache(zh, measureWords);
 		return measureWords;
 	}
 
@@ -532,7 +560,7 @@ public class DbRepo
 
 	private List<String> getListOfString(String sql, String search, String column) throws SQLException
 	{
-		final List<String> cached = DbRepoCache.getInstance().getListOfStringsCache(sql, search, column);
+		final List<String> cached = cache.getListOfStringsCache(sql, search, column);
 		if(cached != null)
 		{
 			return cached;
@@ -551,7 +579,7 @@ public class DbRepo
 				}
 			}
 		}
-		DbRepoCache.getInstance().setListOfStringsCache(sql, search, column, result);
+		cache.setListOfStringsCache(sql, search, column, result);
 		return result;
 	}
 
@@ -601,7 +629,7 @@ public class DbRepo
 			pstEnglishFts5.executeBatch();
 		}
 		db.commit();
-		DbRepoCache.getInstance().wipe();
+		cache.wipe();
 	}
 
 	public void fillMeasureWords(List<RawMeasureWordRow> allRows) throws SQLException
