@@ -96,9 +96,13 @@ public class DbRepoCache
 		return reverseSimplified.getOrDefault(simplified, null);
 	}
 
-	public void setReverseSimplified(String simplified, List<String> traditionals)
+	public void setReverseSimplified(String simplified, String traditional)
 	{
-		reverseSimplified.put(simplified, traditionals);
+		if(!reverseSimplified.containsKey(simplified))
+		{
+			reverseSimplified.put(simplified, new ArrayList<>());
+		}
+		reverseSimplified.get(simplified).add(traditional);
 	}
 
 	public void wipe()

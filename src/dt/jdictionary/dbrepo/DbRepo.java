@@ -330,6 +330,7 @@ public class DbRepo
 	public Map<String, List<String>> lookupReverseSimplified(List<String> characters) throws SQLException
 	{
 		final Map<String, List<String>> reverseResults = new HashMap<>();
+		final List<String> noCache = new ArrayList<>();
 		for(final String character : characters)
 		{
 			final List<String> cached = cache.getReverseSimplified(character);
@@ -337,21 +338,28 @@ public class DbRepo
 			{
 				reverseResults.put(character, cached);
 			}
+			else
+			{
+				noCache.add(character);
+			}
 		}
-		if(reverseResults.size() == characters.size())
+		logger.info("reverse simplified for " + String.join(", ", characters) + " in cache: " + reverseResults.size() + " NOT in cache: " + noCache.size());
+
+		if(noCache.isEmpty())
 		{
+			logger.info("everything in the cache for reverse simplified: " + String.join(", ", characters));
 			return reverseResults;
 		}
 
-		final String inQuestionMarks = "?, ".repeat(characters.size());
+		final String inQuestionMarks = "?, ".repeat(noCache.size());
 		final String sql = String.format(
 				"select * from %s where %s in (" + inQuestionMarks.substring(0, inQuestionMarks.length() - 2) + ")",
 				Tables.TABLE_SIMPLIFIED, Columns.COL_SIMPLIFIED);	
 		try(final PreparedStatement pst = db.prepareStatement(sql))
 		{
-			for(int i=1; i<=characters.size(); i++)
+			for(int i=1; i<=noCache.size(); i++)
 			{
-				pst.setString(i, characters.get(i-1));
+				pst.setString(i, noCache.get(i-1));
 			}
 
 			try(final ResultSet results = pst.executeQuery())
@@ -365,6 +373,7 @@ public class DbRepo
 						reverseResults.put(simplified, new ArrayList<>());
 					}
 					reverseResults.get(simplified).add(og);
+					cache.setReverseSimplified(simplified, og);
 				}
 			}
 		}
@@ -376,11 +385,7 @@ public class DbRepo
 				// this character is the same simplified and traditional
 				final List<String> nochange = List.of(character);
 				reverseResults.put(character, nochange);
-				cache.setReverseSimplified(character, nochange);
-			}
-			else
-			{
-				cache.setReverseSimplified(character, reverseResults.get(character));
+				cache.setReverseSimplified(character, character);
 			}
 		}
 		return reverseResults;
