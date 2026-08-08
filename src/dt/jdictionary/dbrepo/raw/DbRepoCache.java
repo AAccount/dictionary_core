@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// Need to wrap all cache responses in a "response" object because sometimes null is the answer.
 public class DbRepoCache 
 {
 	private final Map<Integer, String> simplifiedCache = new HashMap<>();
