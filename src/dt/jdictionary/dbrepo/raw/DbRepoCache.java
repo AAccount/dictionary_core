@@ -24,10 +24,6 @@ public class DbRepoCache
 
 	public synchronized void setResultsForTableColumn(String table, String column, String columnValue, RawDictionaryRow result)
 	{
-		if(column.equals(Columns.COL_ZH) && columnValue.equals("沒有"))
-		{
-			System.out.println("got it");
-		}
 		if(!tableColumnEntryCache.containsKey(table))
 		{
 			tableColumnEntryCache.put(table, new HashMap<>());
