@@ -6,19 +6,16 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
+
 import dt.cedict.SimpleLookup;
 import dt.jdictionary.dbrepo.raw.Columns;
 import dt.jdictionary.dbrepo.raw.DbRepoCache;
@@ -31,8 +28,11 @@ import dt.jdictionary.dbrepo.raw.Tables;
 
 public class DbRepo
 {
+	private static final Logger logger = Logger.getLogger(DbRepo.class.getName());
+
 	private static final int MAXIMUM_RESULTS = 200; // nobody is going to check more than 20 pages of stuff
 	private Connection db;
+	private DbRepoCache cache = DbRepoCache.getInstance();
 
 	private static final String dateTimeFormat = "yyyy-MM-dd HH:mm:ss.SSSS";
 	private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(dateTimeFormat);
@@ -60,7 +60,7 @@ public class DbRepo
 
 	public DbRepo() throws SQLException, ClassNotFoundException
 	{
-		final Path fullPath = Path.of(System.getProperty("user.home"), "Programs", "mdbg2_1.sqlite");
+		final Path fullPath = Path.of(System.getProperty("user.home"), "Programs", "mdbg2_2.sqlite");
 		final File parentDir = fullPath.getParent().toFile();
 		if(!parentDir.exists()) 
 		{
@@ -131,10 +131,11 @@ public class DbRepo
 
 		final String createPastHits = String.format("""
 				CREATE TABLE IF NOT EXISTS %s (
-					%s	INTEGER NOT NULL,
-					"timestamp"	TEXT NOT NULL
+					%s	TEXT NOT NULL,
+					%s	TEXT NOT NULL,
+					PRIMARY KEY(%s)
 				);
-				""", Tables.TABLE_PASTHITS, Columns.COL_ZH, Columns.COL_TIMESTAMP);
+				""", Tables.TABLE_PASTHITS, Columns.COL_ZH, Columns.COL_TIMESTAMP, Columns.COL_ZH);
 		indexes.add(List.of(Tables.TABLE_PASTHITS, Columns.COL_ZH));
 		indexes.add(List.of(Tables.TABLE_PASTHITS, Columns.COL_TIMESTAMP));
 		
@@ -200,7 +201,15 @@ public class DbRepo
 	public void saveHits(List<String> hits, boolean validateAgainstDictionary) throws SQLException
 	{
 		final List<String> entries = validateAgainstDictionary ? filterWordsToKnown(hits) : hits;
-		final String sql = String.format("INSERT INTO %s (%s, %s) VALUES (?,?)", Tables.TABLE_PASTHITS, Columns.COL_ZH, Columns.COL_TIMESTAMP);
+		final String sql = String.format("""
+			INSERT INTO %s (%s, %s) 
+			VALUES (?,?)
+			ON CONFLICT(%s)
+			DO UPDATE SET %s = EXCLUDED.%s
+			""", Tables.TABLE_PASTHITS, 
+			Columns.COL_ZH, Columns.COL_TIMESTAMP,
+			Columns.COL_ZH,
+			Columns.COL_TIMESTAMP, Columns.COL_TIMESTAMP);
 		try(final PreparedStatement pst = db.prepareStatement(sql))
 		{
 			for (final String entry : entries)
@@ -235,27 +244,42 @@ public class DbRepo
 	{
 		if(zhStrings.isEmpty())
 		{
+			logger.info("did not get any strings to lookup for column " + column);
 			return List.of();
 		}
 		
-		final String zhsStringsKeyString = String.join(" ", zhStrings);		
-		final String repeaterRawString = "?, ".repeat(zhStrings.size());
+		final List<RawDictionaryRow> cached = new ArrayList<>();
+		final List<String> noCache = new ArrayList<>();
+		for(final String zh : zhStrings)
+		{
+			final List<RawDictionaryRow> inCache = cache.getTableColumnCache(Tables.TABLE_ZHBASE, column, zh);
+			if(inCache.isEmpty())
+			{
+				noCache.add(zh);
+			}
+			else
+			{
+				cached.addAll(inCache);
+			}
+		}
+		logger.info("cached entries " + cached.size() + " uncached entries " + noCache.size());
+		if(noCache.isEmpty())
+		{
+			logger.info("all entries for string are cached");
+			return cached;
+		}
+
+		final String repeaterRawString = "?, ".repeat(noCache.size());
 		final String repeaterString = repeaterRawString.substring(0, repeaterRawString.length() - 2);
 		final String where = column + " in (" + repeaterString + ")";
 		final String sql = RANKED_SQL(where);
-		
-		final List<RawDictionaryRow> cached = DbRepoCache.getInstance().getTableCache(sql, zhsStringsKeyString);
-		if(cached != null)
-		{
-			return cached;
-		}
 
 		final List<RawDictionaryRow> rawDbRows = new ArrayList<>();
 		try(final PreparedStatement pst = db.prepareStatement(sql))
 		{
-			for (int i = 0; i < zhStrings.size(); i++)
+			for (int i = 0; i < noCache.size(); i++)
 			{
-				pst.setString(i + 1, zhStrings.get(i));
+				pst.setString(i + 1, noCache.get(i));
 			}
 
 			try(final ResultSet results = pst.executeQuery())
@@ -264,18 +288,15 @@ public class DbRepo
 			}
 		}
 		
-		DbRepoCache.getInstance().setTableCache(sql, zhsStringsKeyString, rawDbRows);
+		for(final RawDictionaryRow newRow : rawDbRows)
+		{
+			cache.setResultsForTableColumn(Tables.TABLE_ZHBASE, column, newRow.getZh(), newRow);
+		}
 		return rawDbRows;
 	}
 
 	private List<RawDictionaryRow> lookupDictionaryTable(String sql, String target) throws SQLException
 	{
-		final List<RawDictionaryRow> cached = DbRepoCache.getInstance().getTableCache(sql, target);
-		if(cached != null)
-		{
-			return cached;
-		}
-
 		final List<RawDictionaryRow> rawDbRows = new ArrayList<>();
 		try(final PreparedStatement pst = db.prepareStatement(sql))
 		{
@@ -285,7 +306,6 @@ public class DbRepo
 				rawDbRows.addAll(processRawDbRows(results));
 			}
 		}
-		DbRepoCache.getInstance().setTableCache(sql, target, rawDbRows);
 		return rawDbRows;
 	}
 	
@@ -443,13 +463,33 @@ public class DbRepo
 	public List<RawDictionaryRow> lookupRelatedWord(String zh, RelatedChar similarity) throws SQLException
 	{
 		final String column = similarity == RelatedChar.SAME_FRONT ? Columns.COL_FIRST_CHAR : Columns.COL_LAST_CHAR;
+		final List<RawDictionaryRow> cached = cache.getTableColumnCache(Tables.TABLE_ZHBASE, column, zh);
+		if(!cached.isEmpty())
+		{
+			logger.info("related word for " + zh + " was cached");
+			return cached;
+		}
+		logger.info("related word for " + zh + " not in the cache");
+
 		final String where = column + " = ?";
-		List<RawDictionaryRow> result =  lookupDictionaryTable(RANKED_SQL(where), zh);
+		final List<RawDictionaryRow> result =  lookupDictionaryTable(RANKED_SQL(where), zh);
+		for(final RawDictionaryRow newRow : result)
+		{
+			cache.setResultsForTableColumn(Tables.TABLE_ZHBASE, column, zh, newRow);
+		}
 		return result;
 	}
 
 	public List<RawDictionaryRow> lookupEnglish(String en) throws SQLException
 	{
+		final List<RawDictionaryRow> cached = cache.getTableColumnCache(Tables.TABLE_ENGLISH, Columns.COL_DEF, en);
+		if(!cached.isEmpty())
+		{
+			logger.info("english search for " + en + " was cached");
+			return cached;
+		}
+		logger.info("english search for " + en + " not in the cache");
+
 		final String sql = String.format("""
 			select %s.%s, %s, %s, English.%s, %s, %s, max(%s.%s, coalesce(max(unixepoch(%s.%s)), 0)) as %s 
 			from %s 
@@ -470,7 +510,12 @@ public class DbRepo
 			Columns.COL_ID,
 			Columns.COL_RANK,
 			MAXIMUM_RESULTS);
-		return lookupDictionaryTable(sql, en);
+		final List<RawDictionaryRow> results = lookupDictionaryTable(sql, en);
+		for(final RawDictionaryRow result : results)
+		{
+			cache.setResultsForTableColumn(Tables.TABLE_ENGLISH, Columns.COL_DEF, en, result);
+		}
+		return results;
 	}
 
 	

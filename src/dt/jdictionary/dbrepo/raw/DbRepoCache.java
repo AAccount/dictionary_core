@@ -1,5 +1,6 @@
 package dt.jdictionary.dbrepo.raw;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -7,11 +8,11 @@ import java.util.Map;
 // Need to wrap all cache responses in a "response" object because sometimes null is the answer.
 public class DbRepoCache 
 {
-	private final Map<String, List<RawDictionaryRow>> tableCache = new HashMap<>();
 	private final Map<String, String> simplifiedCache = new HashMap<>();
 	private final Map<String, List<String>> measureWordCache = new HashMap<>();
 	private final Map<String, List<String>> listOfStringsCache = new HashMap<>();
 	private final Map<String, List<String>> reverseSimplified = new HashMap<>();
+	private final Map<String, Map<String, Map<String, List<RawDictionaryRow>>>> tableColumnEntryCache = new HashMap<>();
 
 	private final static DbRepoCache instance = new DbRepoCache();
 
@@ -22,16 +23,42 @@ public class DbRepoCache
 
 	private DbRepoCache() {}
 
-	public List<RawDictionaryRow> getTableCache(String sql, String target)
+	public synchronized void setResultsForTableColumn(String table, String column, String columnValue, RawDictionaryRow result)
 	{
-		final String key = stringMergedKey(new String[]{sql, target});
-		return tableCache.getOrDefault(key, null);
+		if(column.equals(Columns.COL_ZH) && columnValue.equals("沒有"))
+		{
+			System.out.println("got it");
+		}
+		if(!tableColumnEntryCache.containsKey(table))
+		{
+			tableColumnEntryCache.put(table, new HashMap<>());
+		}
+
+		if(!tableColumnEntryCache.get(table).containsKey(column))
+		{
+			tableColumnEntryCache.get(table).put(column, new HashMap<>());
+		}
+
+		if(!tableColumnEntryCache.get(table).get(column).containsKey(columnValue))
+		{
+			tableColumnEntryCache.get(table).get(column).put(columnValue, new ArrayList<>());
+		}
+		tableColumnEntryCache.get(table).get(column).get(columnValue).add(result);
 	}
 
-	public void setTableCache(String sql, String target, List<RawDictionaryRow> result)
+	public synchronized List<RawDictionaryRow> getTableColumnCache(String table, String column, String columnValue)
 	{
-		final String key = stringMergedKey(new String[]{sql, target});
-		tableCache.put(key, result);
+		if(!tableColumnEntryCache.containsKey(table))
+		{
+			return List.of();
+		}
+
+		if(!tableColumnEntryCache.get(table).containsKey(column))
+		{
+			return List.of();
+		}
+
+		return tableColumnEntryCache.get(table).get(column).getOrDefault(columnValue, List.of());
 	}
 
 	public String getSimplifiedCache(String zh)
@@ -78,7 +105,7 @@ public class DbRepoCache
 
 	public void wipe()
 	{
-		tableCache.clear();
+		tableColumnEntryCache.clear();
 		simplifiedCache.clear();
 		measureWordCache.clear();
 		listOfStringsCache.clear();
