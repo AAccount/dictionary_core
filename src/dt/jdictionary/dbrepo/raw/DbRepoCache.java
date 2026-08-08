@@ -10,7 +10,7 @@ public class DbRepoCache
 {
 	private final Map<Integer, String> simplifiedCache = new HashMap<>();
 	private final Map<String, List<String>> measureWordCache = new HashMap<>();
-	private final Map<String, List<String>> listOfStringsCache = new HashMap<>();
+	private final Map<String, List<String>> superStringCache = new HashMap<>();
 	private final Map<String, List<String>> reverseSimplified = new HashMap<>();
 	private final Map<String, Map<String, Map<String, List<RawDictionaryRow>>>> tableColumnEntryCache = new HashMap<>();
 
@@ -81,16 +81,14 @@ public class DbRepoCache
 		measureWordCache.put(zh, measureWords);
 	}
 
-	public List<String> getListOfStringsCache(String sql, String search, String column)
+	public List<String> getSuperstrings(String chinese)
 	{
-		final String key = stringMergedKey(new String[]{sql, search, column});
-		return listOfStringsCache.getOrDefault(key, null);
+		return superStringCache.getOrDefault(chinese, null);
 	}
 
-	public void setListOfStringsCache(String sql, String search, String column, List<String> results)
+	public void setSuperstrings(String chinese, List<String> results)
 	{
-		final String key = stringMergedKey(new String[]{sql, search, column});
-		listOfStringsCache.put(key, results);
+		superStringCache.put(chinese, results);
 	}
 
 	public List<String> getReverseSimplified(String simplified)
@@ -108,18 +106,7 @@ public class DbRepoCache
 		tableColumnEntryCache.clear();
 		simplifiedCache.clear();
 		measureWordCache.clear();
-		listOfStringsCache.clear();
+		superStringCache.clear();
 		reverseSimplified.clear();
-	}
-
-	private String stringMergedKey(String[] strings)
-	{
-		final String STRING_DELIM = "‱";
-		final StringBuilder sb = new StringBuilder();
-		for(final String string : strings)
-		{
-			sb.append(string).append(STRING_DELIM);
-		}
-		return sb.toString();
 	}
 }

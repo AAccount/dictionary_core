@@ -9,12 +9,12 @@ import dt.jdictionary.ChineseSummaryLookup;
 import dt.jdictionary.dbrepo.DbRepo;
 import dt.jdictionary.dbservice.DbServiceUtils;
 
-public class SubstringOfSearch implements AlternateSearch
+public class SuperstringSearch implements AlternateSearch
 {
 	private final String zh;
 	private final DbRepo db;
 	
-	public SubstringOfSearch(String zh, DbRepo db)
+	public SuperstringSearch(String zh, DbRepo db)
 	{
 		this.zh = zh;
 		this.db = db;
@@ -23,7 +23,7 @@ public class SubstringOfSearch implements AlternateSearch
 	@Override
  	public List<ChineseSummaryLookup> trySearch() throws SQLException
 	{
-		final List<String> possibleMatches = this.db.trySubstring(this.zh);
+		final List<String> possibleMatches = this.db.lookupSuperstrings(this.zh);
 		if(possibleMatches.size() == 0)
 		{
 			return new ArrayList<>();
@@ -35,6 +35,6 @@ public class SubstringOfSearch implements AlternateSearch
 	@Override
 	public String LOOKUP_NAME()
 	{
-		return "Substring Of";
+		return "Superstring";
 	}
 }

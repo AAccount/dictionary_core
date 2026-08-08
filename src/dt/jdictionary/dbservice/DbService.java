@@ -25,7 +25,7 @@ import dt.jdictionary.dbservice.alternative.DeinterlaceSearch;
 import dt.jdictionary.dbservice.alternative.SameBackSearch;
 import dt.jdictionary.dbservice.alternative.SameFrontSearch;
 import dt.jdictionary.dbservice.alternative.SimplifiedSearch;
-import dt.jdictionary.dbservice.alternative.SubstringOfSearch;
+import dt.jdictionary.dbservice.alternative.SuperstringSearch;
 import dt.jdictionary.dbservice.alternative.SubstringSearch;
 import dt.jdictionary.dbservice.alternative.TypoSearch;
 import dt.jdictionary.util.GenerateCombinations;
@@ -69,7 +69,7 @@ public class DbService
 			new SameFrontSearch(chinese, db), 
 			new SameBackSearch(chinese, db), 
 			new SubstringSearch(chinese, db), 
-			new SubstringOfSearch(chinese, db), 
+			new SuperstringSearch(chinese, db), 
 			new DeinterlaceSearch(chinese, db), 
 			new TypoSearch(chinese, db),
 			new SimplifiedSearch(chinese, db)

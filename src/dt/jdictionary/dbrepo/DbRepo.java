@@ -545,41 +545,36 @@ public class DbRepo
 		}
 		return results;
 	}
-
-	
-	public List<String> trySubstring(String compoundWord) throws SQLException
-	{
-		final String sql = String.format("select %s from %s where %s = ?", Columns.COL_FULL_STRING, Tables.TABLE_SUBSTRING, Columns.COL_SUBSTRING);
-		return getListOfString(sql, compoundWord, Columns.COL_FULL_STRING);
-	}
 	
 	public List<RawDictionaryRow> findByNormalizedPinyin(List<String> normalizedPinyins) throws SQLException
 	{
 		return lookupChineseByColumn(Columns.COL_PINYIN_NORM, normalizedPinyins);
 	}
 
-	private List<String> getListOfString(String sql, String search, String column) throws SQLException
+	public List<String> lookupSuperstrings(String chinese) throws SQLException
 	{
-		final List<String> cached = cache.getListOfStringsCache(sql, search, column);
+		final String sql = String.format("select %s from %s where %s = ?", Columns.COL_FULL_STRING, Tables.TABLE_SUBSTRING, Columns.COL_SUBSTRING);
+		final List<String> cached = cache.getSuperstrings(chinese);
 		if(cached != null)
 		{
+			logger.info("superstrings for " + chinese + " in cache");
 			return cached;
 		}
+		logger.info("superstrings for " + chinese + "  NOT in cache");
 
 		final List<String> result = new ArrayList<>();
-
 		try(final PreparedStatement pst = db.prepareStatement(sql))
 		{
-			pst.setString(1, search);
+			pst.setString(1, chinese);
 			try(final ResultSet results = pst.executeQuery())
 			{
 				while (results.next())
 				{
-					result.add(results.getString(column));
+					result.add(results.getString(Columns.COL_FULL_STRING));
 				}
 			}
 		}
-		cache.setListOfStringsCache(sql, search, column, result);
+		cache.setSuperstrings(chinese, result);
 		return result;
 	}
 
