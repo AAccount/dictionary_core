@@ -6,15 +6,19 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import dt.jdictionary.ChineseSummaryLookup;
 import dt.jdictionary.dbrepo.DbRepo;
+import dt.jdictionary.dbservice.DbService;
 import dt.jdictionary.dbservice.DbServiceUtils;
 import dt.util.ChineseText;
 
 public class TypoSearch implements AlternateSearch
 {
+	private static final Logger logger = Logger.getLogger(TypoSearch.class.getName());
+
 	private final String zh;
 	private final DbRepo db;
 	
@@ -29,8 +33,9 @@ public class TypoSearch implements AlternateSearch
 	{
 		final List<String> chars = ChineseText.charsByCodepoint(this.zh);
 		final List<List<String>> normalizedPinyins = findPinyinForZh(chars);
-		if(this.zh.length() != normalizedPinyins.size())
+		if(chars.size() != normalizedPinyins.size())
 		{
+			logger.info("pinyins per char does not match the amount of chars, chars: " + zh + " got pinyins for " + normalizedPinyins.size() + " of them");
 			return new ArrayList<>();
 		}
 
