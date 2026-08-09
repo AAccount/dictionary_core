@@ -258,9 +258,9 @@ public class DbService
 			.join();
 	}
 	
-	public CompletableFuture<Void> savePastHits(List<String> words, boolean verifyInDictionary)
+	public void savePastHits(List<String> words, boolean verifyInDictionary)
 	{
-		return CompletableFuture
+		CompletableFuture
 			.runAsync(() -> {
 				try 
 				{
@@ -271,7 +271,12 @@ public class DbService
 					logger.severe("problems saving a series of past hits\n" + LogUtils.printStackTrace(e));
 					throw new RuntimeException(e.getLocalizedMessage(), e);
 				}
-			}, writeExecutor);
+			}, writeExecutor)
+			.exceptionally(x -> {
+						logger.severe("could not import past hits " + LogUtils.printStackTrace(x.getCause()));
+						return null;
+			})
+			.join();
 	}
 	
 	
