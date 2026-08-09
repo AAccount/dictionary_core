@@ -237,9 +237,10 @@ public class DbService
 		return rawResults;
 	}
 
-	public CompletableFuture<Void> saveCedictDump(CedictDump dump, ProgressListener listener) throws Exception
+	public void saveCedictDump(CedictDump dump, ProgressListener listener) throws Exception
 	{
-		return CompletableFuture.runAsync(() -> {
+		CompletableFuture
+			.runAsync(() -> {
 			try 
 			{
 				new SaveCedict(db, dump, listener).save();
@@ -249,7 +250,12 @@ public class DbService
 				logger.severe("problems saving cedict parse\n" + LogUtils.printStackTrace(e));
 				throw new RuntimeException(e.getLocalizedMessage(), e);
 			}
-		}, writeExecutor);
+			}, writeExecutor)
+			.exceptionally(ex -> {
+					logger.severe("problems saving cedict " + LogUtils.printStackTrace(ex.getCause()));
+					return null;
+			})
+			.join();
 	}
 	
 	public CompletableFuture<Void> savePastHits(List<String> words, boolean verifyInDictionary)
