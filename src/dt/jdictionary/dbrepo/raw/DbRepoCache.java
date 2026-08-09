@@ -56,42 +56,42 @@ public class DbRepoCache
 		return tableColumnEntryCache.get(table).get(column).getOrDefault(columnValue, List.of());
 	}
 
-	public String getSimplifiedCache(Integer codepoint)
+	public synchronized String getSimplifiedCache(Integer codepoint)
 	{
 		return simplifiedCache.getOrDefault(codepoint, null);
 	}
 
-	public void setSimplfiedCache(Integer codepoint, String simplified)
+	public synchronized void setSimplfiedCache(Integer codepoint, String simplified)
 	{
 		simplifiedCache.put(codepoint, simplified);
 	}
 
-	public List<String> getMeasureWordCache(String zh)
+	public synchronized List<String> getMeasureWordCache(String zh)
 	{
 		return measureWordCache.getOrDefault(zh, null);
 	}
 
-	public void setMeasureWordCache(String zh, List<String> measureWords)
+	public synchronized void setMeasureWordCache(String zh, List<String> measureWords)
 	{
 		measureWordCache.put(zh, measureWords);
 	}
 
-	public List<String> getSuperstrings(String chinese)
+	public synchronized List<String> getSuperstrings(String chinese)
 	{
 		return superStringCache.getOrDefault(chinese, null);
 	}
 
-	public void setSuperstrings(String chinese, List<String> results)
+	public synchronized void setSuperstrings(String chinese, List<String> results)
 	{
 		superStringCache.put(chinese, results);
 	}
 
-	public List<String> getReverseSimplified(String simplified)
+	public synchronized List<String> getReverseSimplified(String simplified)
 	{
 		return reverseSimplified.getOrDefault(simplified, null);
 	}
 
-	public void setReverseSimplified(String simplified, String traditional)
+	public synchronized void setReverseSimplified(String simplified, String traditional)
 	{
 		if(!reverseSimplified.containsKey(simplified))
 		{
