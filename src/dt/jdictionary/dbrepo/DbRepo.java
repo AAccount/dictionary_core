@@ -39,6 +39,8 @@ public class DbRepo
 
 	private static final String RANKED_SQL(String whereCondition)
 	{
+		// This SQL assumes only 0 or 1 match in the past hits column per chinese.
+		// Multiple past hits rows for the same chinese cause the SQL to duplicate the definitions by as many rows for that 1 chinese.
 		return String.format("""
 			select %s.%s, %s, %s, group_concat(%s, ' / ') as %s, %s, %s, max(%s, coalesce(max(unixepoch(%s.%s)), 0)) as %s
 			from %s 
