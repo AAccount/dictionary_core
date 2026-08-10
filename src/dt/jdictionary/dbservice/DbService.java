@@ -97,9 +97,10 @@ public class DbService
 
 		final CompletableFuture<Void> allFinished = CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0]));
 		final CompletableFuture<ExhaustiveChineseLookup> assembleResults = allFinished.thenApplyAsync(v -> {
+			final ChineseDefinitionLookup definition = directResults.join();
 			if(shouldSave)
 			{
-				saveChineseSearchHits(directResults.join());
+				saveChineseSearchHits(definition);
 			}
 			final Map<String, List<DictionaryEntry>> altMap = new LinkedHashMap<>();
 			for(int i=0; i<altFutures.size(); i++)
@@ -112,7 +113,7 @@ public class DbService
 				}
 				altMap.put(searchObj.LOOKUP_NAME(), altResult);
 			}
-			return new ExhaustiveChineseLookup(directResults.join(), altMap);
+			return new ExhaustiveChineseLookup(definition, altMap);
 
 		}, writeExecutor);
 		final ExhaustiveChineseLookup exhaustiveLookup = assembleResults.join();
