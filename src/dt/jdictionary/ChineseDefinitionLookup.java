@@ -4,22 +4,22 @@ import java.util.Map;
 
 public class ChineseDefinitionLookup 
 {
-	private final String zh;
+	private final String chinese;
 	private final Map<String, List<String>> results;
 	private final String simplified;
 	private final List<String> measureWords;
 
-	public ChineseDefinitionLookup(String zh, Map<String, List<String>> results, String simplified, List<String> measureWords)
+	public ChineseDefinitionLookup(String chinese, Map<String, List<String>> results, String simplified, List<String> measureWords)
 	{
-		this.zh = zh;
+		this.chinese = chinese;
 		this.results = results;
 		this.simplified = simplified;
 		this.measureWords = measureWords;
 	}
 
-	public String getZh() 
+	public String getChinese() 
 	{
-		return zh;
+		return chinese;
 	}
 
 	public Map<String, List<String>> getResults() 

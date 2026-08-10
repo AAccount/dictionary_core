@@ -9,19 +9,19 @@ import dt.jdictionary.dbrepo.DictionaryEntry;
 
 public class SuperstringSearch implements AlternateSearch
 {
-	private final String zh;
+	private final String chinese;
 	private final DbRepo db;
 	
-	public SuperstringSearch(String zh, DbRepo db)
+	public SuperstringSearch(String chinese, DbRepo db)
 	{
-		this.zh = zh;
+		this.chinese = chinese;
 		this.db = db;
 	}
 
 	@Override
  	public List<DictionaryEntry> trySearch() throws SQLException
 	{
-		final List<String> possibleMatches = this.db.lookupSuperstrings(this.zh);
+		final List<String> possibleMatches = this.db.lookupSuperstrings(this.chinese);
 		if(possibleMatches.size() == 0)
 		{
 			return new ArrayList<>();

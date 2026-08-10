@@ -68,14 +68,14 @@ public class DbRepoCache
 		simplifiedCache.put(codepoint, simplified);
 	}
 
-	public synchronized List<String> getMeasureWordCache(String zh)
+	public synchronized List<String> getMeasureWordCache(String chinese)
 	{
-		return measureWordCache.getOrDefault(zh, null);
+		return measureWordCache.getOrDefault(chinese, null);
 	}
 
-	public synchronized void setMeasureWordCache(String zh, List<String> measureWords)
+	public synchronized void setMeasureWordCache(String chinese, List<String> measureWords)
 	{
-		measureWordCache.put(zh, measureWords);
+		measureWordCache.put(chinese, measureWords);
 	}
 
 	public synchronized List<String> getSuperstrings(String chinese)

@@ -85,7 +85,7 @@ public class DictionaryEntry implements Comparable<DictionaryEntry>
 	@Override
 	public String toString()
 	{
-		return "DictionaryEntry [zh=" + chinese + ", pinyin=" + pinyin + ", definition=" + definition + ", rank=" + rank + "]";
+		return "DictionaryEntry [chinese=" + chinese + ", pinyin=" + pinyin + ", definition=" + definition + ", rank=" + rank + "]";
 	}
 
 	@Override

@@ -10,12 +10,12 @@ import dt.util.ChineseText;
 
 public class DeinterlaceSearch implements AlternateSearch
 {	
-	private final String zh;
+	private final String chinese;
 	private final DbRepo db;
 	
-	public DeinterlaceSearch(String zh, DbRepo db)
+	public DeinterlaceSearch(String chinese, DbRepo db)
 	{
-		this.zh = zh;
+		this.chinese = chinese;
 		this.db = db;
 	}
 
@@ -28,12 +28,12 @@ public class DeinterlaceSearch implements AlternateSearch
 	{
 		final int MIN_DEINTERLACE = 3;
 		final int MAX_DEINTERLACE = 4;
-		if(this.zh.length() < MIN_DEINTERLACE || this.zh.length() > MAX_DEINTERLACE)
+		if(this.chinese.length() < MIN_DEINTERLACE || this.chinese.length() > MAX_DEINTERLACE)
 		{
 			return new ArrayList<>();
 		}
 
-		final List<String> chars = ChineseText.charsByCodepoint(zh);
+		final List<String> chars = ChineseText.charsByCodepoint(chinese);
 		final List<String> candidates = new ArrayList<String>();
 		candidates.add(chars.get(0) + chars.get(2));
 		if(chars.size() == MAX_DEINTERLACE)

@@ -2,20 +2,20 @@ package dt.jdictionary.dbrepo.raw;
 
 public class RawMeasureWordRow 
 {
-	private final String zh;
+	private final String chinese;
 	private final String measure;
 	private final String measurePinyin;
 
-	public RawMeasureWordRow(String zh, String measure, String measurePinyin) 
+	public RawMeasureWordRow(String chinese, String measure, String measurePinyin) 
 	{
-		this.zh = zh;
+		this.chinese = chinese;
 		this.measure = measure;
 		this.measurePinyin = measurePinyin;
 	}
 
-	public String getZh() 
+	public String getChinese() 
 	{
-		return zh;
+		return chinese;
 	}
 
 	public String getMeasure() 
@@ -44,7 +44,7 @@ public class RawMeasureWordRow
 
 		final RawMeasureWordRow casted = (RawMeasureWordRow)obj;
 		return
-			casted.zh.equals(this.zh) &&
+			casted.chinese.equals(this.chinese) &&
 			casted.measure.equals(this.measure) &&
 			casted.measurePinyin.equals(this.measurePinyin);
 	}
@@ -52,6 +52,6 @@ public class RawMeasureWordRow
 	@Override
 	public String toString()
 	{
-		return "RawMeasureWordRow [zh=" + zh + ", measure=" + measure + ", measurePinyin=" + measurePinyin + "]";
+		return "RawMeasureWordRow [chinese=" + chinese + ", measure=" + measure + ", measurePinyin=" + measurePinyin + "]";
 	}	
 }

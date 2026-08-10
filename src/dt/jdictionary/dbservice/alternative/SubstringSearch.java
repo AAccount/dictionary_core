@@ -14,22 +14,22 @@ import dt.util.ChineseText;
 
 public class SubstringSearch implements AlternateSearch
 {
-	private final String zh;
+	private final String chinese;
 	private final DbRepo db;
 	private final Map<String, Double> frontToBackRanking;
 	public static final String LOOKUP_NAME = "Substring";
 	
-	public SubstringSearch(String zh, DbRepo db)
+	public SubstringSearch(String chinese, DbRepo db)
 	{
-		this.zh = zh;
+		this.chinese = chinese;
 		this.db = db;
-		this.frontToBackRanking = this.generateFrontToBackRanking(zh);
+		this.frontToBackRanking = this.generateFrontToBackRanking(chinese);
 	}
 
 	@Override
 	public List<DictionaryEntry> trySearch() throws SQLException
 	{
-		final List<String> allSubstrings = GenerateSubstrings.generateSubstrings(this.zh);
+		final List<String> allSubstrings = GenerateSubstrings.generateSubstrings(this.chinese);
 		return this.db.lookupChinese(allSubstrings)
 				.stream().map(simpleLookup -> new DictionaryEntry(simpleLookup, this.rankBasedOnOriginalFrontToBack(simpleLookup.getChinese())))
 				.collect(Collectors.toCollection(ArrayList::new));
@@ -53,8 +53,8 @@ public class SubstringSearch implements AlternateSearch
 		return result;
 	}
 	
-	private double rankBasedOnOriginalFrontToBack(String resultZh)
+	private double rankBasedOnOriginalFrontToBack(String chinese)
 	{
-		return ChineseText.charsByCodepoint(resultZh).stream().reduce(0.0, (acc, singleChar) -> acc + this.frontToBackRanking.get(singleChar), Double::sum);
+		return ChineseText.charsByCodepoint(chinese).stream().reduce(0.0, (acc, singleChar) -> acc + this.frontToBackRanking.get(singleChar), Double::sum);
 	}
 }

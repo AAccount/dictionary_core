@@ -49,10 +49,10 @@ public class DbRepo
 			group by %s
 			order by %s desc
 			limit %s
-		""", Tables.TABLE_ZHBASE, Columns.COL_ZH, Columns.COL_PINYIN, Columns.COL_PINYIN_NORM, Columns.COL_DEF, Columns.COL_DEF, Columns.COL_FIRST_CHAR, Columns.COL_LAST_CHAR, Columns.COL_RANK, Tables.TABLE_PASTHITS, Columns.COL_TIMESTAMP, Columns.COL_RANK,
-			Tables.TABLE_ZHBASE,
-			Tables.TABLE_ENGLISH, Tables.TABLE_ZHBASE, Columns.COL_ID, Tables.TABLE_ENGLISH, Columns.COL_ZHBASEID,
-			Tables.TABLE_PASTHITS, Tables.TABLE_PASTHITS, Columns.COL_ZH, Tables.TABLE_ZHBASE, Columns.COL_ZH,
+		""", Tables.TABLE_CHINESE_BASE, Columns.COL_CHINESE, Columns.COL_PINYIN, Columns.COL_PINYIN_NORM, Columns.COL_DEF, Columns.COL_DEF, Columns.COL_FIRST_CHAR, Columns.COL_LAST_CHAR, Columns.COL_RANK, Tables.TABLE_PASTHITS, Columns.COL_TIMESTAMP, Columns.COL_RANK,
+			Tables.TABLE_CHINESE_BASE,
+			Tables.TABLE_ENGLISH, Tables.TABLE_CHINESE_BASE, Columns.COL_ID, Tables.TABLE_ENGLISH, Columns.COL_CHINESE_BASEID,
+			Tables.TABLE_PASTHITS, Tables.TABLE_PASTHITS, Columns.COL_CHINESE, Tables.TABLE_CHINESE_BASE, Columns.COL_CHINESE,
 			whereCondition,
 			Columns.COL_ID,
 			Columns.COL_RANK,
@@ -61,14 +61,14 @@ public class DbRepo
 
 	public DbRepo() throws SQLException, ClassNotFoundException
 	{
-		final Path fullPath = Path.of(System.getProperty("user.home"), "Programs", "mdbg2_2.sqlite");
+		final Path fullPath = Path.of(System.getProperty("user.home"), "Programs", "mdbg2_3.sqlite");
 		final File parentDir = fullPath.getParent().toFile();
 		if(!parentDir.exists()) 
 		{
 			parentDir.mkdirs(); 
 		}
-		// final String sqlitePath = "/tmp/mdbg2_1.sqlite";
-		final String sqlitePath = fullPath.toString();
+		final String sqlitePath = "/tmp/mdbg2_3.sqlite";
+		// final String sqlitePath = fullPath.toString();
 		Class.forName("org.sqlite.JDBC");
 		this.db = DriverManager.getConnection("jdbc:sqlite:"+sqlitePath);
 		db.setAutoCommit(false);
@@ -77,7 +77,7 @@ public class DbRepo
 	public void init() throws SQLException
 	{
 		final List<List<String>> indexes = new ArrayList<>();
-		final String createZhBase = String.format("""
+		final String createChineseBase = String.format("""
 				CREATE TABLE %s (
 						%s	INTEGER NOT NULL, 
 						%s	TEXT NOT NULL, 
@@ -89,20 +89,20 @@ public class DbRepo
 						PRIMARY KEY(%s AUTOINCREMENT)
 					)
 					"""
-			, Tables.TABLE_ZHBASE, Columns.COL_ID, Columns.COL_ZH, Columns.COL_PINYIN, Columns.COL_PINYIN_NORM, Columns.COL_FIRST_CHAR, Columns.COL_LAST_CHAR, Columns.COL_RANK, Columns.COL_ID);
-		indexes.add(List.of(Tables.TABLE_ZHBASE, Columns.COL_ID));
-		indexes.add(List.of(Tables.TABLE_ZHBASE, Columns.COL_ZH));
-		indexes.add(List.of(Tables.TABLE_ZHBASE, Columns.COL_FIRST_CHAR));
-		indexes.add(List.of(Tables.TABLE_ZHBASE, Columns.COL_LAST_CHAR));
-		indexes.add(List.of(Tables.TABLE_ZHBASE, Columns.COL_PINYIN_NORM));
+			, Tables.TABLE_CHINESE_BASE, Columns.COL_ID, Columns.COL_CHINESE, Columns.COL_PINYIN, Columns.COL_PINYIN_NORM, Columns.COL_FIRST_CHAR, Columns.COL_LAST_CHAR, Columns.COL_RANK, Columns.COL_ID);
+		indexes.add(List.of(Tables.TABLE_CHINESE_BASE, Columns.COL_ID));
+		indexes.add(List.of(Tables.TABLE_CHINESE_BASE, Columns.COL_CHINESE));
+		indexes.add(List.of(Tables.TABLE_CHINESE_BASE, Columns.COL_FIRST_CHAR));
+		indexes.add(List.of(Tables.TABLE_CHINESE_BASE, Columns.COL_LAST_CHAR));
+		indexes.add(List.of(Tables.TABLE_CHINESE_BASE, Columns.COL_PINYIN_NORM));
 
 		final String createEnglish = String.format("""
 			CREATE TABLE %s (
 				%s	INTEGER NOT NULL, 
 				%s	TEXT NOT NULL
-			);""", Tables.TABLE_ENGLISH, Columns.COL_ZHBASEID, Columns.COL_DEF);
-		final String createEnglishFTS5 = String.format("CREATE VIRTUAL TABLE %s using fts5(%s, %s)", Tables.TABLE_ENGLISH_FTS5, Columns.COL_DEF, Columns.COL_ZHBASEID);
-		indexes.add(List.of(Tables.TABLE_ENGLISH, Columns.COL_ZHBASEID));
+			);""", Tables.TABLE_ENGLISH, Columns.COL_CHINESE_BASEID, Columns.COL_DEF);
+		final String createEnglishFTS5 = String.format("CREATE VIRTUAL TABLE %s using fts5(%s, %s)", Tables.TABLE_ENGLISH_FTS5, Columns.COL_DEF, Columns.COL_CHINESE_BASEID);
+		indexes.add(List.of(Tables.TABLE_ENGLISH, Columns.COL_CHINESE_BASEID));
 
 		final String createMeasureWords = String.format("""
 			CREATE TABLE %s (
@@ -110,8 +110,8 @@ public class DbRepo
 				%s	TEXT NOT NULL, 
 				%s	TEXT NOT NULL, 
 				PRIMARY KEY(%s,%s)
-				)""", Tables.TABLE_MEASUREWORD, Columns.COL_ZH, Columns.COL_MEASURE_WORD, Columns.COL_MEASURE_PINYIN, Columns.COL_ZH, Columns.COL_MEASURE_WORD);
-		indexes.add(List.of(Tables.TABLE_MEASUREWORD, Columns.COL_ZH));
+				)""", Tables.TABLE_MEASUREWORD, Columns.COL_CHINESE, Columns.COL_MEASURE_WORD, Columns.COL_MEASURE_PINYIN, Columns.COL_CHINESE, Columns.COL_MEASURE_WORD);
+		indexes.add(List.of(Tables.TABLE_MEASUREWORD, Columns.COL_CHINESE));
 
 		final String createSimplified = String.format("""
 			CREATE TABLE %s (
@@ -136,12 +136,12 @@ public class DbRepo
 					%s	TEXT NOT NULL,
 					PRIMARY KEY(%s)
 				);
-				""", Tables.TABLE_PASTHITS, Columns.COL_ZH, Columns.COL_TIMESTAMP, Columns.COL_ZH);
-		indexes.add(List.of(Tables.TABLE_PASTHITS, Columns.COL_ZH));
+				""", Tables.TABLE_PASTHITS, Columns.COL_CHINESE, Columns.COL_TIMESTAMP, Columns.COL_CHINESE);
+		indexes.add(List.of(Tables.TABLE_PASTHITS, Columns.COL_CHINESE));
 		indexes.add(List.of(Tables.TABLE_PASTHITS, Columns.COL_TIMESTAMP));
 		
 		final String[] tables = {
-			createZhBase,
+			createChineseBase,
 			createEnglish, createEnglishFTS5,
 			createMeasureWords,
 			createSimplified,
@@ -208,8 +208,8 @@ public class DbRepo
 			ON CONFLICT(%s)
 			DO UPDATE SET %s = EXCLUDED.%s
 			""", Tables.TABLE_PASTHITS, 
-			Columns.COL_ZH, Columns.COL_TIMESTAMP,
-			Columns.COL_ZH,
+			Columns.COL_CHINESE, Columns.COL_TIMESTAMP,
+			Columns.COL_CHINESE,
 			Columns.COL_TIMESTAMP, Columns.COL_TIMESTAMP);
 		try(final PreparedStatement pst = db.prepareStatement(sql))
 		{
@@ -236,14 +236,14 @@ public class DbRepo
 		return results;
 	}
 	
-	public List<DictionaryEntry> lookupChinese(List<String> zhStrings) throws SQLException
+	public List<DictionaryEntry> lookupChinese(List<String> strings) throws SQLException
 	{
-		return lookupChineseByColumn(Tables.TABLE_ZHBASE + "." +Columns.COL_ZH, zhStrings);
+		return lookupChineseByColumn(Tables.TABLE_CHINESE_BASE + "." +Columns.COL_CHINESE, strings);
 	}
 	
-	private List<DictionaryEntry> lookupChineseByColumn(String column, List<String> zhStrings) throws SQLException
+	private List<DictionaryEntry> lookupChineseByColumn(String column, List<String> strings) throws SQLException
 	{
-		if(zhStrings.isEmpty())
+		if(strings.isEmpty())
 		{
 			logger.info("did not get any strings to lookup for column " + column);
 			return List.of();
@@ -251,12 +251,12 @@ public class DbRepo
 		
 		final List<DictionaryEntry> cached = new ArrayList<>();
 		final List<String> noCache = new ArrayList<>();
-		for(final String zh : zhStrings)
+		for(final String str : strings)
 		{
-			final List<DictionaryEntry> inCache = cache.getTableColumnCache(Tables.TABLE_ZHBASE, column, zh);
+			final List<DictionaryEntry> inCache = cache.getTableColumnCache(Tables.TABLE_CHINESE_BASE, column, str);
 			if(inCache.isEmpty())
 			{
-				noCache.add(zh);
+				noCache.add(str);
 			}
 			else
 			{
@@ -291,7 +291,7 @@ public class DbRepo
 		
 		for(final DictionaryEntry newRow : entries)
 		{
-			cache.setResultsForTableColumn(Tables.TABLE_ZHBASE, column, newRow.getChinese(), newRow);
+			cache.setResultsForTableColumn(Tables.TABLE_CHINESE_BASE, column, newRow.getChinese(), newRow);
 		}
 		return entries;
 	}
@@ -316,7 +316,7 @@ public class DbRepo
 		while(results.next())
 		{
 			final DictionaryEntry row =  new DictionaryEntry(
-				results.getString(Columns.COL_ZH), 
+				results.getString(Columns.COL_CHINESE), 
 				results.getString(Columns.COL_PINYIN), 
 				results.getString(Columns.COL_PINYIN_NORM),
 				results.getString(Columns.COL_DEF), 
@@ -392,12 +392,12 @@ public class DbRepo
 		return reverseResults;
 	}
 
-	public String lookupSimplified(String zh) throws SQLException
+	public String lookupSimplified(String original) throws SQLException
 	{
-		final int[] zhCodePoints = zh.codePoints().toArray();
+		final int[] codePoints = original.codePoints().toArray();
 		final List<Integer> unCached = new ArrayList<>();
 		final Map<Integer, String> simplifiedMapping = new HashMap<>();
-		for(final int codepoint : zhCodePoints)
+		for(final int codepoint : codePoints)
 		{
 			final String cached = cache.getSimplifiedCache(codepoint);
 			if(cached != null)
@@ -409,7 +409,7 @@ public class DbRepo
 				unCached.add(codepoint);
 			}
 		}
-		logger.info("simplified cache for " + zh + " in cache: " + simplifiedMapping.size() + " not in cache: " + unCached.size());
+		logger.info("simplified cache for " + original + " in cache: " + simplifiedMapping.size() + " not in cache: " + unCached.size());
 
 		if(!unCached.isEmpty())
 		{
@@ -422,11 +422,11 @@ public class DbRepo
 			}
 		}
 		
-		final StringBuilder zhSimplified = new StringBuilder();
-		for (final int codepoint : zhCodePoints)
+		final StringBuilder simplified = new StringBuilder();
+		for (final int codepoint : codePoints)
 		{
 			final String resultchar = simplifiedMapping.getOrDefault(codepoint, Character.toString(codepoint));
-			zhSimplified.append(resultchar);
+			simplified.append(resultchar);
 
 			// To avoid relooking up characters with no simplified form, cheat and set the simplified as itself.
 			if(!simplifiedMapping.containsKey(codepoint))
@@ -435,7 +435,7 @@ public class DbRepo
 			}
 		}
 
-		final String result = zhSimplified.toString();
+		final String result = simplified.toString();
 		return result;
 	}
 
@@ -467,20 +467,20 @@ public class DbRepo
 		return charMapper;
 	}
 
-	public List<String> lookupMeasureWords(String zh) throws SQLException
+	public List<String> lookupMeasureWords(String chinese) throws SQLException
 	{
-		final List<String> cached = cache.getMeasureWordCache(zh);
+		final List<String> cached = cache.getMeasureWordCache(chinese);
 		if(cached != null)
 		{
 			return cached;
 		}
 
 		final List<String> measureWords = new ArrayList<>();
-		final String sql = String.format("select %s from %s where %s = ?", Columns.COL_MEASURE_WORD, Tables.TABLE_MEASUREWORD, Columns.COL_ZH);
+		final String sql = String.format("select %s from %s where %s = ?", Columns.COL_MEASURE_WORD, Tables.TABLE_MEASUREWORD, Columns.COL_CHINESE);
 		
 		try(final PreparedStatement pst = db.prepareStatement(sql))
 		{
-			pst.setString(1, zh);
+			pst.setString(1, chinese);
 
 			try(final ResultSet results = pst.executeQuery())
 			{	
@@ -490,26 +490,26 @@ public class DbRepo
 				}
 			}
 		}
-		cache.setMeasureWordCache(zh, measureWords);
+		cache.setMeasureWordCache(chinese, measureWords);
 		return measureWords;
 	}
 
-	public List<DictionaryEntry> lookupRelatedWord(String zh, RelatedChar similarity) throws SQLException
+	public List<DictionaryEntry> lookupRelatedWord(String baseWord, RelatedChar similarity) throws SQLException
 	{
 		final String column = similarity == RelatedChar.SAME_FRONT ? Columns.COL_FIRST_CHAR : Columns.COL_LAST_CHAR;
-		final List<DictionaryEntry> cached = cache.getTableColumnCache(Tables.TABLE_ZHBASE, column, zh);
+		final List<DictionaryEntry> cached = cache.getTableColumnCache(Tables.TABLE_CHINESE_BASE, column, baseWord);
 		if(!cached.isEmpty())
 		{
-			logger.info("related word for " + zh + " was cached");
+			logger.info("related word for " + baseWord + " was cached");
 			return cached;
 		}
-		logger.info("related word for " + zh + " not in the cache");
+		logger.info("related word for " + baseWord + " not in the cache");
 
 		final String where = column + " = ?";
-		final List<DictionaryEntry> result =  lookupDictionaryTable(RANKED_SQL(where), zh);
+		final List<DictionaryEntry> result =  lookupDictionaryTable(RANKED_SQL(where), baseWord);
 		for(final DictionaryEntry newRow : result)
 		{
-			cache.setResultsForTableColumn(Tables.TABLE_ZHBASE, column, zh, newRow);
+			cache.setResultsForTableColumn(Tables.TABLE_CHINESE_BASE, column, baseWord, newRow);
 		}
 		return result;
 	}
@@ -535,11 +535,11 @@ public class DbRepo
 			order by %s desc
 			limit %s
 		""",
-			Tables.TABLE_ZHBASE, Columns.COL_ZH, Columns.COL_PINYIN, Columns.COL_PINYIN_NORM, Columns.COL_DEF, Columns.COL_FIRST_CHAR, Columns.COL_LAST_CHAR, Tables.TABLE_ZHBASE, Columns.COL_RANK, Tables.TABLE_PASTHITS, Columns.COL_TIMESTAMP, Columns.COL_RANK,
-			Tables.TABLE_ZHBASE,
-			Tables.TABLE_ENGLISH_FTS5, Tables.TABLE_ZHBASE, Columns.COL_ID, Tables.TABLE_ENGLISH_FTS5, Columns.COL_ZHBASEID,
-			Tables.TABLE_ENGLISH, Tables.TABLE_ZHBASE, Columns.COL_ID, Tables.TABLE_ENGLISH, Columns.COL_ZHBASEID,
-			Tables.TABLE_PASTHITS, Tables.TABLE_PASTHITS, Columns.COL_ZH, Tables.TABLE_ZHBASE, Columns.COL_ZH,
+			Tables.TABLE_CHINESE_BASE, Columns.COL_CHINESE, Columns.COL_PINYIN, Columns.COL_PINYIN_NORM, Columns.COL_DEF, Columns.COL_FIRST_CHAR, Columns.COL_LAST_CHAR, Tables.TABLE_CHINESE_BASE, Columns.COL_RANK, Tables.TABLE_PASTHITS, Columns.COL_TIMESTAMP, Columns.COL_RANK,
+			Tables.TABLE_CHINESE_BASE,
+			Tables.TABLE_ENGLISH_FTS5, Tables.TABLE_CHINESE_BASE, Columns.COL_ID, Tables.TABLE_ENGLISH_FTS5, Columns.COL_CHINESE_BASEID,
+			Tables.TABLE_ENGLISH, Tables.TABLE_CHINESE_BASE, Columns.COL_ID, Tables.TABLE_ENGLISH, Columns.COL_CHINESE_BASEID,
+			Tables.TABLE_PASTHITS, Tables.TABLE_PASTHITS, Columns.COL_CHINESE, Tables.TABLE_CHINESE_BASE, Columns.COL_CHINESE,
 			Tables.TABLE_ENGLISH_FTS5, Columns.COL_DEF,
 			Columns.COL_ID,
 			Columns.COL_RANK,
@@ -587,12 +587,12 @@ public class DbRepo
 	
 	public void fillDictionary(List<SimpleLookup> allEntries) throws SQLException
 	{
-		final String sqlZhBase = String.format("INSERT INTO %s (%s, %s, %s, %s, %s, %s) VALUES (?,?,?,?,?, ?)", Tables.TABLE_ZHBASE, Columns.COL_ZH, Columns.COL_PINYIN, Columns.COL_PINYIN_NORM, Columns.COL_FIRST_CHAR, Columns.COL_LAST_CHAR, Columns.COL_RANK);
-		final String sqlEnglish = String.format("INSERT INTO %s (%s, %s) VALUES (?,?)", Tables.TABLE_ENGLISH, Columns.COL_ZHBASEID, Columns.COL_DEF);
+		final String sqlChineseBase = String.format("INSERT INTO %s (%s, %s, %s, %s, %s, %s) VALUES (?,?,?,?,?, ?)", Tables.TABLE_CHINESE_BASE, Columns.COL_CHINESE, Columns.COL_PINYIN, Columns.COL_PINYIN_NORM, Columns.COL_FIRST_CHAR, Columns.COL_LAST_CHAR, Columns.COL_RANK);
+		final String sqlEnglish = String.format("INSERT INTO %s (%s, %s) VALUES (?,?)", Tables.TABLE_ENGLISH, Columns.COL_CHINESE_BASEID, Columns.COL_DEF);
 		final String sqlEnglishFTS5 = String.format("INSERT INTO %s (%s, %s) VALUES (?,?)", Tables.TABLE_ENGLISH_FTS5,
-				Columns.COL_ZHBASEID, Columns.COL_DEF);
+				Columns.COL_CHINESE_BASEID, Columns.COL_DEF);
 
-		try(final PreparedStatement pstZhBase = db.prepareStatement(sqlZhBase);
+		try(final PreparedStatement pstChineseBase = db.prepareStatement(sqlChineseBase);
 			final PreparedStatement pstEnglish = db.prepareStatement(sqlEnglish);
 			final PreparedStatement pstEnglishFts5 = db.prepareStatement(sqlEnglishFTS5))
 		{
@@ -600,14 +600,14 @@ public class DbRepo
 
 			for (final SimpleLookup entry : allEntries)
 			{
-				final DictionaryEntry zhBase = new DictionaryEntry(entry.getZh(), entry.getPinyin(), entry.getRank());
-				pstZhBase.setString(1, zhBase.getChinese());
-				pstZhBase.setString(2, zhBase.getPinyin());
-				pstZhBase.setString(3, zhBase.getPinyinNormalized());
-				pstZhBase.setString(4, zhBase.getFirstChar());
-				pstZhBase.setString(5, zhBase.getLastChar());
-				pstZhBase.setDouble(6, zhBase.getRank());
-				pstZhBase.execute();
+				final DictionaryEntry chineseBase = new DictionaryEntry(entry.getZh(), entry.getPinyin(), entry.getRank());
+				pstChineseBase.setString(1, chineseBase.getChinese());
+				pstChineseBase.setString(2, chineseBase.getPinyin());
+				pstChineseBase.setString(3, chineseBase.getPinyinNormalized());
+				pstChineseBase.setString(4, chineseBase.getFirstChar());
+				pstChineseBase.setString(5, chineseBase.getLastChar());
+				pstChineseBase.setDouble(6, chineseBase.getRank());
+				pstChineseBase.execute();
 
 				try(final PreparedStatement getId = db.prepareStatement("select last_insert_rowid() as id;");
 				final ResultSet getIdResults = getId.executeQuery())
@@ -635,13 +635,13 @@ public class DbRepo
 
 	public void fillMeasureWords(List<RawMeasureWordRow> allRows) throws SQLException
 	{
-		final String sql = String.format("INSERT INTO %s (%s, %s, %s) VALUES (?,?,?)", Tables.TABLE_MEASUREWORD, Columns.COL_ZH, Columns.COL_MEASURE_WORD, Columns.COL_MEASURE_PINYIN);
+		final String sql = String.format("INSERT INTO %s (%s, %s, %s) VALUES (?,?,?)", Tables.TABLE_MEASUREWORD, Columns.COL_CHINESE, Columns.COL_MEASURE_WORD, Columns.COL_MEASURE_PINYIN);
 		
 		try(final PreparedStatement pst = db.prepareStatement(sql))
 		{
 			for (final RawMeasureWordRow row : allRows)
 			{
-				pst.setString(1, row.getZh());
+				pst.setString(1, row.getChinese());
 				pst.setString(2, row.getMeasure());
 				pst.setString(3, row.getMeasurePinyin());
 				pst.addBatch();

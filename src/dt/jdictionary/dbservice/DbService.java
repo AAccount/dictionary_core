@@ -120,9 +120,9 @@ public class DbService
 		return exhaustiveLookup;
 	}
 	
-	private ChineseDefinitionLookup lookupChineseDefinition(String zh) throws SQLException
+	private ChineseDefinitionLookup lookupChineseDefinition(String chinese) throws SQLException
 	{
-		final List<DictionaryEntry> entries = db.lookupChinese(List.of(zh));
+		final List<DictionaryEntry> entries = db.lookupChinese(List.of(chinese));
 		final Map<String, List<String>> resultsByPinyin = new HashMap<>();
 		for(final DictionaryEntry entry : entries)
 		{
@@ -134,9 +134,9 @@ public class DbService
 			resultsByPinyin.get(pinyin).add(entry.getDefinition());
 		}
 
-		final String simplified = db.lookupSimplified(zh);
-		final List<String> measureWords = db.lookupMeasureWords(zh);
-		final ChineseDefinitionLookup result = new ChineseDefinitionLookup(zh, resultsByPinyin, simplified, measureWords);
+		final String simplified = db.lookupSimplified(chinese);
+		final List<String> measureWords = db.lookupMeasureWords(chinese);
+		final ChineseDefinitionLookup result = new ChineseDefinitionLookup(chinese, resultsByPinyin, simplified, measureWords);
 		return result;
 	}
 	
@@ -145,7 +145,7 @@ public class DbService
 		final List<String> hits = new ArrayList<>();
 		if(!definitionLookup.getResults().isEmpty())
 		{
-			hits.add(definitionLookup.getZh());
+			hits.add(definitionLookup.getChinese());
 		}
 		try 
 		{

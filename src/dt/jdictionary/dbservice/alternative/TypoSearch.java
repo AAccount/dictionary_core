@@ -11,30 +11,29 @@ import java.util.stream.Collectors;
 
 import dt.jdictionary.dbrepo.DbRepo;
 import dt.jdictionary.dbrepo.DictionaryEntry;
-import dt.jdictionary.dbservice.DbService;
 import dt.util.ChineseText;
 
 public class TypoSearch implements AlternateSearch
 {
 	private static final Logger logger = Logger.getLogger(TypoSearch.class.getName());
 
-	private final String zh;
+	private final String chinese;
 	private final DbRepo db;
 	
-	public TypoSearch(String zh, DbRepo db)
+	public TypoSearch(String chinese, DbRepo db)
 	{
-		this.zh = zh;
+		this.chinese = chinese;
 		this.db = db;
 	}
 
 	@Override
 	public List<DictionaryEntry> trySearch() throws SQLException
 	{
-		final List<String> chars = ChineseText.charsByCodepoint(this.zh);
-		final List<List<String>> normalizedPinyins = findPinyinForZh(chars);
+		final List<String> chars = ChineseText.charsByCodepoint(this.chinese);
+		final List<List<String>> normalizedPinyins = findPinyinForChinese(chars);
 		if(chars.size() != normalizedPinyins.size())
 		{
-			logger.info("pinyins per char does not match the amount of chars, chars: " + zh + " got pinyins for " + normalizedPinyins.size() + " of them");
+			logger.info("pinyins per char does not match the amount of chars, chars: " + chinese + " got pinyins for " + normalizedPinyins.size() + " of them");
 			return new ArrayList<>();
 		}
 
@@ -43,7 +42,7 @@ public class TypoSearch implements AlternateSearch
 
 		return candidates.stream()
 				.map(candidate -> new DictionaryEntry(candidate, pinyinLookupSimilarity(candidate, chars)))
-				.filter(candidate -> candidate.getRank() >0 && candidate.getRank() < this.zh.length())
+				.filter(candidate -> candidate.getRank() >0 && candidate.getRank() < this.chinese.length())
 				.collect(Collectors.toCollection(ArrayList::new));
 	}
 
@@ -63,7 +62,7 @@ public class TypoSearch implements AlternateSearch
 		return similarity;
 	}
 
-	private List<List<String>> findPinyinForZh(List<String> chars) throws SQLException
+	private List<List<String>> findPinyinForChinese(List<String> chars) throws SQLException
 	{
 		final HashMap<String, Set<String>> pinyinMap = new HashMap<>();
 		final List<DictionaryEntry> dictionaryEntries = this.db.lookupChinese(chars);

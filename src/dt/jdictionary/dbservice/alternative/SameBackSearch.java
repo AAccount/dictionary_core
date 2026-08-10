@@ -9,19 +9,19 @@ import dt.jdictionary.dbrepo.raw.RelatedChar;
 
 public class SameBackSearch implements AlternateSearch
 {
-	private final String zh;
+	private final String chinese;
 	private final DbRepo db;
 	
-	public SameBackSearch(String zh, DbRepo db)
+	public SameBackSearch(String chinese, DbRepo db)
 	{
-		this.zh = zh;
+		this.chinese = chinese;
 		this.db = db;
 	}
 
 	@Override
 	public List<DictionaryEntry> trySearch() throws SQLException
 	{
-		final int[] codepoints = this.zh.codePoints().toArray();
+		final int[] codepoints = this.chinese.codePoints().toArray();
 		final String lastChar = Character.toString(codepoints[codepoints.length-1]);
 		return this.db.lookupRelatedWord(lastChar, RelatedChar.SAME_BACK);
 	}
