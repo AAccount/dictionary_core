@@ -4,12 +4,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import dt.jdictionary.dbrepo.raw.RawDictionaryRow;
+
 public class ExhaustiveChineseLookup 
 {
 	private final ChineseDefinitionLookup definition;
-	private final Map<String, List<ChineseSummaryLookup>> supplementaries;
+	private final Map<String, List<RawDictionaryRow>> supplementaries;
 	
-	public ExhaustiveChineseLookup(ChineseDefinitionLookup definition, Map<String, List<ChineseSummaryLookup>> supplementaries) 
+	public ExhaustiveChineseLookup(ChineseDefinitionLookup definition, Map<String, List<RawDictionaryRow>> supplementaries) 
 	{
 		super();
 		this.definition = definition;
@@ -21,7 +23,7 @@ public class ExhaustiveChineseLookup
 		return definition;
 	}
 	
-	public Map<String, List<ChineseSummaryLookup>> getSupplementaries() 
+	public Map<String, List<RawDictionaryRow>> getSupplementaries() 
 	{
 		return supplementaries;
 	}

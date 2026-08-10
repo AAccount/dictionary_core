@@ -4,9 +4,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import dt.jdictionary.ChineseSummaryLookup;
 import dt.jdictionary.dbrepo.DbRepo;
-import dt.jdictionary.dbservice.DbServiceUtils;
+import dt.jdictionary.dbrepo.raw.RawDictionaryRow;
 import dt.util.ChineseText;
 
 public class DeinterlaceSearch implements AlternateSearch
@@ -25,7 +24,7 @@ public class DeinterlaceSearch implements AlternateSearch
 	 * @throws SQLException 
 	 */
 	@Override
-	public List<ChineseSummaryLookup> trySearch() throws SQLException
+	public List<RawDictionaryRow> trySearch() throws SQLException
 	{
 		final int MIN_DEINTERLACE = 3;
 		final int MAX_DEINTERLACE = 4;
@@ -41,7 +40,7 @@ public class DeinterlaceSearch implements AlternateSearch
 		{
 			candidates.add(chars.get(1) + chars.get(3));
 		}
-		return DbServiceUtils.convertRawToSimple(this.db.lookupChinese(candidates));
+		return this.db.lookupChinese(candidates);
 	}
 
 	@Override

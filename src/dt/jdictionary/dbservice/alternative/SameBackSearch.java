@@ -3,11 +3,9 @@ package dt.jdictionary.dbservice.alternative;
 import java.sql.SQLException;
 import java.util.List;
 
-import dt.jdictionary.ChineseSummaryLookup;
 import dt.jdictionary.dbrepo.DbRepo;
 import dt.jdictionary.dbrepo.raw.RawDictionaryRow;
 import dt.jdictionary.dbrepo.raw.RelatedChar;
-import dt.jdictionary.dbservice.DbServiceUtils;
 
 public class SameBackSearch implements AlternateSearch
 {
@@ -21,12 +19,11 @@ public class SameBackSearch implements AlternateSearch
 	}
 
 	@Override
-	public List<ChineseSummaryLookup> trySearch() throws SQLException
+	public List<RawDictionaryRow> trySearch() throws SQLException
 	{
 		final int[] codepoints = this.zh.codePoints().toArray();
 		final String lastChar = Character.toString(codepoints[codepoints.length-1]);
-		final List<RawDictionaryRow> rawResults = this.db.lookupRelatedWord(lastChar, RelatedChar.SAME_BACK);
-		return DbServiceUtils.convertRawToSimple(rawResults);
+		return this.db.lookupRelatedWord(lastChar, RelatedChar.SAME_BACK);
 	}
 
 	@Override

@@ -9,10 +9,9 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import dt.jdictionary.ChineseSummaryLookup;
 import dt.jdictionary.dbrepo.DbRepo;
+import dt.jdictionary.dbrepo.raw.RawDictionaryRow;
 import dt.jdictionary.dbservice.DbService;
-import dt.jdictionary.dbservice.DbServiceUtils;
 import dt.util.ChineseText;
 
 public class TypoSearch implements AlternateSearch
@@ -29,7 +28,7 @@ public class TypoSearch implements AlternateSearch
 	}
 
 	@Override
-	public List<ChineseSummaryLookup> trySearch() throws SQLException
+	public List<RawDictionaryRow> trySearch() throws SQLException
 	{
 		final List<String> chars = ChineseText.charsByCodepoint(this.zh);
 		final List<List<String>> normalizedPinyins = findPinyinForZh(chars);
@@ -40,18 +39,18 @@ public class TypoSearch implements AlternateSearch
 		}
 
 		final List<String> permutations = pinyinPermutations(normalizedPinyins);
-		final List<ChineseSummaryLookup> candidates = DbServiceUtils.convertRawToSimple(this.db.findByNormalizedPinyin(permutations));
+		final List<RawDictionaryRow> candidates = this.db.findByNormalizedPinyin(permutations);
 
 		return candidates.stream()
-				.map(candidate -> new ChineseSummaryLookup(candidate, pinyinLookupSimilarity(candidate, chars)))
+				.map(candidate -> new RawDictionaryRow(candidate, pinyinLookupSimilarity(candidate, chars)))
 				.filter(candidate -> candidate.getRank() >0 && candidate.getRank() < this.zh.length())
 				.collect(Collectors.toCollection(ArrayList::new));
 	}
 
-	private int pinyinLookupSimilarity(ChineseSummaryLookup candidate, List<String> targetChars)
+	private int pinyinLookupSimilarity(RawDictionaryRow candidate, List<String> targetChars)
 	{
 		int similarity = 0;
-		final List<String> chars = ChineseText.charsByCodepoint(candidate.getChinese());
+		final List<String> chars = ChineseText.charsByCodepoint(candidate.getZh());
 		final Set<String> candidateSet = new HashSet<>();
 		chars.stream().forEach(candidateChar -> candidateSet.add(candidateChar));
 		for(final String targetChar : targetChars)
@@ -67,14 +66,14 @@ public class TypoSearch implements AlternateSearch
 	private List<List<String>> findPinyinForZh(List<String> chars) throws SQLException
 	{
 		final HashMap<String, Set<String>> pinyinMap = new HashMap<>();
-		final List<ChineseSummaryLookup> dictionaryEntries = DbServiceUtils.convertRawToSimple(this.db.lookupChinese(chars));
-		for(final ChineseSummaryLookup entry : dictionaryEntries)
+		final List<RawDictionaryRow> dictionaryEntries = this.db.lookupChinese(chars);
+		for(final RawDictionaryRow entry : dictionaryEntries)
 		{
-			if(!pinyinMap.containsKey(entry.getChinese()))
+			if(!pinyinMap.containsKey(entry.getZh()))
 			{
-				pinyinMap.put(entry.getChinese(), new HashSet<>());
+				pinyinMap.put(entry.getZh(), new HashSet<>());
 			}
-			pinyinMap.get(entry.getChinese()).add(ChineseText.normalizePinyin(entry.getPinyin()));
+			pinyinMap.get(entry.getZh()).add(ChineseText.normalizePinyin(entry.getPinyin()));
 		}
 		
 		final List<List<String>> result = new ArrayList<>();

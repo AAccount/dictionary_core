@@ -7,9 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import dt.jdictionary.ChineseSummaryLookup;
 import dt.jdictionary.dbrepo.DbRepo;
-import dt.jdictionary.dbservice.DbServiceUtils;
+import dt.jdictionary.dbrepo.raw.RawDictionaryRow;
 import dt.jdictionary.util.GenerateSubstrings;
 import dt.util.ChineseText;
 
@@ -28,12 +27,11 @@ public class SubstringSearch implements AlternateSearch
 	}
 
 	@Override
-	public List<ChineseSummaryLookup> trySearch() throws SQLException
+	public List<RawDictionaryRow> trySearch() throws SQLException
 	{
 		final List<String> allSubstrings = GenerateSubstrings.generateSubstrings(this.zh);
-		return DbServiceUtils
-				.convertRawToSimple(this.db.lookupChinese(allSubstrings))
-				.stream().map(simpleLookup -> new ChineseSummaryLookup(simpleLookup, this.rankBasedOnOriginalFrontToBack(simpleLookup.getChinese())))
+		return this.db.lookupChinese(allSubstrings)
+				.stream().map(simpleLookup -> new RawDictionaryRow(simpleLookup, this.rankBasedOnOriginalFrontToBack(simpleLookup.getZh())))
 				.collect(Collectors.toCollection(ArrayList::new));
 	}
 

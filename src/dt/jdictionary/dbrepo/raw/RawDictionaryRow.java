@@ -2,12 +2,12 @@ package dt.jdictionary.dbrepo.raw;
 
 import dt.util.ChineseText;
 
-public class RawDictionaryRow 
+public class RawDictionaryRow implements Comparable<RawDictionaryRow>
 {
 	private final String zh;
 	private final String pinyin;
 	private final String pinyinNormalized;
-	private final String singleDefinition;
+	private final String definition;
 	private final String firstChar;
 	private final String lastChar;
 	private final double rank;
@@ -17,7 +17,7 @@ public class RawDictionaryRow
 		this.zh = zh;
 		this.pinyin = pinyin;
 		this.pinyinNormalized = ChineseText.normalizePinyin(pinyin);
-		this.singleDefinition = null;
+		this.definition = null;
 		this.rank = rank;
 
 		final int[] codepoints = zh.codePoints().toArray();
@@ -25,12 +25,23 @@ public class RawDictionaryRow
 		this.lastChar = codepoints.length > 1 ? Character.toString(codepoints[codepoints.length-1]) : null;
 	}
 
-	public RawDictionaryRow(String zh, String pinyin, String pinyinNormalized, String singleDefinition, String firstChar, String lastChar, double rank) 
+	public RawDictionaryRow(RawDictionaryRow other, double rank)
+	{
+		this.zh = other.zh;
+		this.pinyin = other.pinyin;
+		this.pinyinNormalized = other.pinyinNormalized;
+		this.definition = other.definition;
+		this.rank = rank;
+		this.firstChar = other.firstChar;
+		this.lastChar = other.lastChar;
+	}
+
+	public RawDictionaryRow(String zh, String pinyin, String pinyinNormalized, String definition, String firstChar, String lastChar, double rank) 
 	{
 		this.zh = zh;
 		this.pinyin = pinyin;
 		this.pinyinNormalized = pinyinNormalized;
-		this.singleDefinition = singleDefinition;
+		this.definition = definition;
 		this.firstChar = firstChar;
 		this.lastChar = lastChar;
 		this.rank = rank;
@@ -46,9 +57,9 @@ public class RawDictionaryRow
 		return pinyin;
 	}
 
-	public String getSingleDefinition() 
+	public String getDefinition() 
 	{
-		return singleDefinition;
+		return definition;
 	}
 	
 	public String getFirstChar() 
@@ -74,7 +85,7 @@ public class RawDictionaryRow
 	@Override
 	public String toString()
 	{
-		return "RawDictionaryRow [zh=" + zh + ", pinyin=" + pinyin + ", singleDefinition=" + singleDefinition + ", rank=" + rank + "]";
+		return "RawDictionaryRow [zh=" + zh + ", pinyin=" + pinyin + ", definition=" + definition + ", rank=" + rank + "]";
 	}
 
 	@Override
@@ -115,5 +126,10 @@ public class RawDictionaryRow
 		return true;
 	}
 
-	
+	@Override
+	public int compareTo(RawDictionaryRow other)
+	{
+		final double difference = this.rank - other.rank;
+		return difference == 0 ? 0 : difference > 0 ? 1 : -1;
+	}
 }

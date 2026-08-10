@@ -4,10 +4,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import dt.jdictionary.ChineseSummaryLookup;
 import dt.jdictionary.dbrepo.DbRepo;
-import dt.jdictionary.dbservice.DbServiceUtils;
+import dt.jdictionary.dbrepo.raw.RawDictionaryRow;
 
 public class SuperstringSearch implements AlternateSearch
 {
@@ -21,7 +19,7 @@ public class SuperstringSearch implements AlternateSearch
 	}
 
 	@Override
- 	public List<ChineseSummaryLookup> trySearch() throws SQLException
+ 	public List<RawDictionaryRow> trySearch() throws SQLException
 	{
 		final List<String> possibleMatches = this.db.lookupSuperstrings(this.zh);
 		if(possibleMatches.size() == 0)
@@ -29,7 +27,7 @@ public class SuperstringSearch implements AlternateSearch
 			return new ArrayList<>();
 		}
 		
-		return DbServiceUtils.convertRawToSimple(this.db.lookupChinese(possibleMatches)).stream().collect(Collectors.toCollection(ArrayList::new));
+		return this.db.lookupChinese(possibleMatches).stream().collect(Collectors.toCollection(ArrayList::new));
 	}
 
 	@Override

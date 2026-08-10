@@ -5,9 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import dt.jdictionary.ChineseSummaryLookup;
 import dt.jdictionary.dbrepo.DbRepo;
-import dt.jdictionary.dbservice.DbServiceUtils;
+import dt.jdictionary.dbrepo.raw.RawDictionaryRow;
 import dt.util.ChineseText;
 
 public class SimplifiedSearch implements AlternateSearch
@@ -22,12 +21,12 @@ public class SimplifiedSearch implements AlternateSearch
 	}
 
 	@Override
-	public List<ChineseSummaryLookup> trySearch() throws SQLException 
+	public List<RawDictionaryRow> trySearch() throws SQLException 
 	{
 		final List<String> characters = ChineseText.charsByCodepoint(chinese);
 		final Map<String, List<String>> reverseMapping = db.lookupReverseSimplified(characters);
 		final List<String> allCombinations = explodeCombinations(characters, reverseMapping);
-		return DbServiceUtils.convertRawToSimple(db.lookupChinese(allCombinations));
+		return db.lookupChinese(allCombinations);
 	}
 
 	private List<String> explodeCombinations(List<String> characters, Map<String, List<String>> reverseMapping)
