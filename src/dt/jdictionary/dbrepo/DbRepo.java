@@ -68,8 +68,8 @@ public class DbRepo
 		{
 			parentDir.mkdirs(); 
 		}
-		final String sqlitePath = "/tmp/mdbg2_3.sqlite";
-		// final String sqlitePath = fullPath.toString();
+		// final String sqlitePath = "/tmp/mdbg2_3.sqlite";
+		final String sqlitePath = fullPath.toString();
 		Class.forName("org.sqlite.JDBC");
 		this.db = DriverManager.getConnection("jdbc:sqlite:"+sqlitePath);
 		db.setAutoCommit(false);
