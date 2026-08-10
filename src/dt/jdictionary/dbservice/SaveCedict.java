@@ -12,7 +12,6 @@ import dt.cedict.CedictDump;
 import dt.cedict.MeasureWords;
 import dt.cedict.SimpleLookup;
 import dt.cedict.ChinesePinyin;
-import dt.jdictionary.ProgressListener;
 import dt.jdictionary.dbrepo.DbRepo;
 import dt.jdictionary.dbrepo.raw.RawMeasureWordRow;
 import dt.jdictionary.dbrepo.raw.RawSimplifiedRow;
@@ -22,25 +21,21 @@ import dt.util.ChineseText;
 
 public class SaveCedict
 {
-		private static final Logger logger = Logger.getLogger(SaveCedict.class.getName());
-
-	private static final String PROGRESS_DESC = "Saving to disk";
+	private static final Logger logger = Logger.getLogger(SaveCedict.class.getName());
 	
 	private final DbRepo db;
 	private final List<SimpleLookup> dictionary;
 	private final List<RawSubstringRow> substringLines;
 	private final List<RawMeasureWordRow> measureWordLines;
 	private final List<RawSimplifiedRow> simplifiedLines;
-	private final ProgressListener externalListener;
 	
-	public SaveCedict(DbRepo db, CedictDump dump, ProgressListener listener)
+	public SaveCedict(DbRepo db, CedictDump dump)
 	{
 		this.db = db;
 		this.dictionary = dump.getDictionary();
 		this.substringLines = fillSubstrings(dictionary);
 		this.measureWordLines = fillMeasureWords(dump.getMeasureWords());
 		this.simplifiedLines = fillSimplified(dump.getSimplifiedChars());
-		this.externalListener = listener;
 	}
 	
 	public void save() throws SQLException
@@ -48,7 +43,6 @@ public class SaveCedict
 		if(this.dictionary.size() == 0)
 		{
 			logger.info("Empty dump. Don't wipe!");
-			this.externalListener.onFractionalProgress(PROGRESS_DESC, 1, 1);
 			return;
 		}
 				

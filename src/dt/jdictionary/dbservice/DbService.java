@@ -16,7 +16,6 @@ import java.util.logging.Logger;
 import dt.cedict.CedictDump;
 import dt.jdictionary.ChineseDefinitionLookup;
 import dt.jdictionary.ExhaustiveChineseLookup;
-import dt.jdictionary.ProgressListener;
 import dt.jdictionary.dbrepo.DbRepo;
 import dt.jdictionary.dbrepo.DictionaryEntry;
 import dt.jdictionary.dbservice.alternative.AlternateSearch;
@@ -237,13 +236,13 @@ public class DbService
 		return entries;
 	}
 
-	public void saveCedictDump(CedictDump dump, ProgressListener listener) throws Exception
+	public void saveCedictDump(CedictDump dump) throws Exception
 	{
 		CompletableFuture
 			.runAsync(() -> {
 			try 
 			{
-				new SaveCedict(db, dump, listener).save();
+				new SaveCedict(db, dump).save();
 			} 
 			catch (Exception e) 
 			{
