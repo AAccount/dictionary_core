@@ -1,6 +1,6 @@
 package dt.jdictionary.dbrepo;
 
-import dt.util.ChineseText;
+import dt.jdictionary.util.ChineseText;
 
 public class DictionaryEntry implements Comparable<DictionaryEntry>
 {

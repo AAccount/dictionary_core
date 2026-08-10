@@ -6,7 +6,7 @@ import java.util.List;
 
 import dt.jdictionary.dbrepo.DbRepo;
 import dt.jdictionary.dbrepo.DictionaryEntry;
-import dt.util.ChineseText;
+import dt.jdictionary.util.ChineseText;
 
 public class DeinterlaceSearch implements AlternateSearch
 {	

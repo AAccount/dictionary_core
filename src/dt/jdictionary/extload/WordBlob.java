@@ -8,9 +8,9 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import dt.jdictionary.ProgressListener;
-import dt.util.ChineseText;
+import dt.cedict.ProgressListener;
 
 public class WordBlob
 {
@@ -39,7 +39,7 @@ public class WordBlob
 			final String[] lineSentences = line.split("\\.\\?\\,。？，");
 			for (final String sentence : lineSentences)
 			{
-				sentences.add(ChineseText.stripNonChinese(sentence));
+				sentences.add(stripNonChinese(sentence));
 			}
 
 			bytesProcessed = bytesProcessed + line.length();
@@ -49,5 +49,13 @@ public class WordBlob
 		fileReader.close();
 
 		return sentences;
+	}
+
+	private String stripNonChinese(String string)
+	{
+		return string.codePoints()
+			.filter(codepoint -> Character.UnicodeScript.of(codepoint) == Character.UnicodeScript.HAN)    
+			.mapToObj(Character::toString)
+			.collect(Collectors.joining());
 	}
 }

@@ -27,7 +27,7 @@ import dt.jdictionary.dbservice.alternative.SuperstringSearch;
 import dt.jdictionary.dbservice.alternative.SubstringSearch;
 import dt.jdictionary.dbservice.alternative.TypoSearch;
 import dt.jdictionary.util.GenerateCombinations;
-import dt.util.LogUtils;
+import dt.jdictionary.util.LogUtils;
 
 public class DbService 
 {

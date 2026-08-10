@@ -7,7 +7,7 @@ import java.util.Map;
 
 import dt.jdictionary.dbrepo.DbRepo;
 import dt.jdictionary.dbrepo.DictionaryEntry;
-import dt.util.ChineseText;
+import dt.jdictionary.util.ChineseText;
 
 public class SimplifiedSearch implements AlternateSearch
 {

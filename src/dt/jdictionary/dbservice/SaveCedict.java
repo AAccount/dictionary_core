@@ -17,7 +17,7 @@ import dt.jdictionary.dbrepo.raw.RawMeasureWordRow;
 import dt.jdictionary.dbrepo.raw.RawSimplifiedRow;
 import dt.jdictionary.dbrepo.raw.RawSubstringRow;
 import dt.jdictionary.util.GenerateSubstrings;
-import dt.util.ChineseText;
+import dt.jdictionary.util.ChineseText;
 
 public class SaveCedict
 {
@@ -57,7 +57,7 @@ public class SaveCedict
 	private List<RawSubstringRow> fillSubstrings(List<SimpleLookup> dictionary)
 	{
 		final List<SimpleLookup> substringEntries = dictionary.stream()
-			.filter(entry -> ChineseText.trueLength(entry.getChinese()) > 1 && ChineseText.allChinese(entry.getChinese(), false))
+			.filter(entry -> entry.getChinese().codePointCount(0, entry.getChinese().length()) > 1 && ChineseText.allChinese(entry.getChinese()))
 			.toList();
 
 		final Set<RawSubstringRow> result = new HashSet<>();

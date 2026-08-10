@@ -24,7 +24,7 @@ import dt.jdictionary.dbrepo.raw.RawSimplifiedRow;
 import dt.jdictionary.dbrepo.raw.RawSubstringRow;
 import dt.jdictionary.dbrepo.raw.RelatedChar;
 import dt.jdictionary.dbrepo.raw.Tables;
-import dt.util.ChineseText;
+import dt.jdictionary.util.ChineseText;
 
 public class DbRepo
 {
@@ -68,8 +68,8 @@ public class DbRepo
 		{
 			parentDir.mkdirs(); 
 		}
-		// final String sqlitePath = "/tmp/mdbg2_3.sqlite";
-		final String sqlitePath = fullPath.toString();
+		final String sqlitePath = "/tmp/mdbg2_3.sqlite";
+		// final String sqlitePath = fullPath.toString();
 		Class.forName("org.sqlite.JDBC");
 		this.db = DriverManager.getConnection("jdbc:sqlite:"+sqlitePath);
 		db.setAutoCommit(false);

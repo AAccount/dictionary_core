@@ -6,7 +6,8 @@ import java.util.List;
 
 public class GenerateSubstrings
 {
-
+	private GenerateSubstrings() {}
+	
 	public static List<String> generateSubstrings(String saying)
 	{
 		// To generate all possible substrings, you will get the original string itself. Don't return that entry.

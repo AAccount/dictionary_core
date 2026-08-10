@@ -7,6 +7,8 @@ import java.util.Set;
 
 public class GenerateCombinations
 {
+	private GenerateCombinations() {}
+
 	public static <T> List<List<T>> generateCombinations(List<T> elements)
 	{
 		final int MINIMUM_USEABLE_STRING = 1;

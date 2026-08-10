@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import dt.jdictionary.dbrepo.DbRepo;
 import dt.jdictionary.dbrepo.DictionaryEntry;
 import dt.jdictionary.util.GenerateSubstrings;
-import dt.util.ChineseText;
+import dt.jdictionary.util.ChineseText;
 
 public class SubstringSearch implements AlternateSearch
 {
