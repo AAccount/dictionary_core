@@ -600,7 +600,7 @@ public class DbRepo
 
 			for (final SimpleLookup entry : allEntries)
 			{
-				final DictionaryEntry chineseBase = new DictionaryEntry(entry.getZh(), entry.getPinyin(), entry.getRank());
+				final DictionaryEntry chineseBase = new DictionaryEntry(entry.getChinese(), entry.getPinyin(), entry.getRank());
 				pstChineseBase.setString(1, chineseBase.getChinese());
 				pstChineseBase.setString(2, chineseBase.getPinyin());
 				pstChineseBase.setString(3, chineseBase.getPinyinNormalized());

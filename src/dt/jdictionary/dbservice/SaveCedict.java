@@ -11,7 +11,7 @@ import java.util.logging.Logger;
 import dt.cedict.CedictDump;
 import dt.cedict.MeasureWords;
 import dt.cedict.SimpleLookup;
-import dt.cedict.ZhPinyin;
+import dt.cedict.ChinesePinyin;
 import dt.jdictionary.ProgressListener;
 import dt.jdictionary.dbrepo.DbRepo;
 import dt.jdictionary.dbrepo.raw.RawMeasureWordRow;
@@ -63,16 +63,16 @@ public class SaveCedict
 	private List<RawSubstringRow> fillSubstrings(List<SimpleLookup> dictionary)
 	{
 		final List<SimpleLookup> substringEntries = dictionary.stream()
-			.filter(entry -> ChineseText.trueLength(entry.getZh()) > 1 && ChineseText.allChinese(entry.getZh(), false))
+			.filter(entry -> ChineseText.trueLength(entry.getChinese()) > 1 && ChineseText.allChinese(entry.getChinese(), false))
 			.toList();
 
 		final Set<RawSubstringRow> result = new HashSet<>();
 		for(final SimpleLookup simpleLookup : substringEntries)
 		{
-			final List<String> substrings = GenerateSubstrings.generateSubstrings(simpleLookup.getZh());
+			final List<String> substrings = GenerateSubstrings.generateSubstrings(simpleLookup.getChinese());
 			for(final String substring : substrings)
 			{
-				result.add(new RawSubstringRow(substring, simpleLookup.getZh()));
+				result.add(new RawSubstringRow(substring, simpleLookup.getChinese()));
 			}
 		}
 		return new ArrayList<>(result); 
@@ -83,10 +83,10 @@ public class SaveCedict
 		final List<RawMeasureWordRow> result = new ArrayList<>();
 		for(final MeasureWords mw : measureWords)
 		{
-			final String noun = mw.getZh();
-			for(final ZhPinyin entry : mw.getMeasures())
+			final String noun = mw.getChinese();
+			for(final ChinesePinyin entry : mw.getMeasures())
 			{
-				result.add(new RawMeasureWordRow(noun, entry.getZh(), entry.getPinyin()));
+				result.add(new RawMeasureWordRow(noun, entry.getChinese(), entry.getPinyin()));
 			}
 		}
 		return result;
