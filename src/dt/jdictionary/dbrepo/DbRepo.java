@@ -24,6 +24,7 @@ import dt.jdictionary.dbrepo.raw.RawSimplifiedRow;
 import dt.jdictionary.dbrepo.raw.RawSubstringRow;
 import dt.jdictionary.dbrepo.raw.RelatedChar;
 import dt.jdictionary.dbrepo.raw.Tables;
+import dt.util.ChineseText;
 
 public class DbRepo
 {
@@ -223,6 +224,27 @@ public class DbRepo
 		}
 		db.commit();
 
+		invalidateCacheAfterHits(hits);
+	}
+
+	private void invalidateCacheAfterHits(List<String> hits)
+	{
+		cache.invalidateTableColumnCache(hits);
+
+		final List<String> fronts = new ArrayList<>();
+		final List<String> backs = new ArrayList<>();
+		for(final String hit : hits)
+		{
+			final List<String> chars = ChineseText.charsByCodepoint(hit);
+			if(!chars.isEmpty())
+			{
+				fronts.add(chars.get(0));
+				backs.add(chars.get(chars.size() - 1));
+			}
+		}
+		
+		cache.invalidateTableColumnCache(fronts);
+		cache.invalidateTableColumnCache(backs);
 	}
 
 	private List<String> filterWordsToKnown(List<String> words) throws SQLException
@@ -263,10 +285,11 @@ public class DbRepo
 				cached.addAll(inCache);
 			}
 		}
-		logger.info("cached entries " + cached.size() + " uncached entries " + noCache.size());
+		final String logPrefix = "lookup chinese by column (" + column + ") strings " + strings + " ";
+		logger.info(logPrefix +"cached entries " + cached.size() + " uncached entries " + noCache.size());
 		if(noCache.isEmpty())
 		{
-			logger.info("all entries for string are cached");
+			logger.info(logPrefix + "all entries for string are cached");
 			return cached;
 		}
 

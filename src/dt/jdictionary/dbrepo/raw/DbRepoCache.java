@@ -58,6 +58,20 @@ public class DbRepoCache
 		return tableColumnEntryCache.get(table).get(column).getOrDefault(columnValue, List.of());
 	}
 
+	public synchronized void invalidateTableColumnCache(List<String> chineseWords)
+	{
+		for(final String table : tableColumnEntryCache.keySet())
+		{
+			for(final String column : tableColumnEntryCache.get(table).keySet())
+			{
+				for(final String chineseWord : chineseWords)
+				{
+					tableColumnEntryCache.get(table).get(column).remove(chineseWord);
+				}
+			}
+		}
+	}
+
 	public synchronized String getSimplifiedCache(Integer codepoint)
 	{
 		return simplifiedCache.getOrDefault(codepoint, null);
