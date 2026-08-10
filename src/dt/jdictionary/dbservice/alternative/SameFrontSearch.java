@@ -4,7 +4,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 import dt.jdictionary.dbrepo.DbRepo;
-import dt.jdictionary.dbrepo.raw.RawDictionaryRow;
+import dt.jdictionary.dbrepo.DictionaryEntry;
 import dt.jdictionary.dbrepo.raw.RelatedChar;
 
 public class SameFrontSearch implements AlternateSearch
@@ -19,7 +19,7 @@ public class SameFrontSearch implements AlternateSearch
 	}
 
 	@Override
-	public List<RawDictionaryRow> trySearch() throws SQLException
+	public List<DictionaryEntry> trySearch() throws SQLException
 	{
 		final int[] codepoints = this.zh.codePoints().toArray();
 		final String firstChar = Character.toString(codepoints[0]);

@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import dt.jdictionary.dbrepo.DbRepo;
-import dt.jdictionary.dbrepo.raw.RawDictionaryRow;
+import dt.jdictionary.dbrepo.DictionaryEntry;
 
 public class SuperstringSearch implements AlternateSearch
 {
@@ -19,7 +19,7 @@ public class SuperstringSearch implements AlternateSearch
 	}
 
 	@Override
- 	public List<RawDictionaryRow> trySearch() throws SQLException
+ 	public List<DictionaryEntry> trySearch() throws SQLException
 	{
 		final List<String> possibleMatches = this.db.lookupSuperstrings(this.zh);
 		if(possibleMatches.size() == 0)

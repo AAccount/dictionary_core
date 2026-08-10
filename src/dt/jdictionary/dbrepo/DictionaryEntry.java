@@ -1,10 +1,10 @@
-package dt.jdictionary.dbrepo.raw;
+package dt.jdictionary.dbrepo;
 
 import dt.util.ChineseText;
 
-public class RawDictionaryRow implements Comparable<RawDictionaryRow>
+public class DictionaryEntry implements Comparable<DictionaryEntry>
 {
-	private final String zh;
+	private final String chinese;
 	private final String pinyin;
 	private final String pinyinNormalized;
 	private final String definition;
@@ -12,22 +12,22 @@ public class RawDictionaryRow implements Comparable<RawDictionaryRow>
 	private final String lastChar;
 	private final double rank;
 
-	public RawDictionaryRow(String zh, String pinyin, double rank) 
+	public DictionaryEntry(String chinese, String pinyin, double rank) 
 	{
-		this.zh = zh;
+		this.chinese = chinese;
 		this.pinyin = pinyin;
 		this.pinyinNormalized = ChineseText.normalizePinyin(pinyin);
 		this.definition = null;
 		this.rank = rank;
 
-		final int[] codepoints = zh.codePoints().toArray();
+		final int[] codepoints = chinese.codePoints().toArray();
 		this.firstChar = codepoints.length > 1 ? Character.toString(codepoints[0]) : null;
 		this.lastChar = codepoints.length > 1 ? Character.toString(codepoints[codepoints.length-1]) : null;
 	}
 
-	public RawDictionaryRow(RawDictionaryRow other, double rank)
+	public DictionaryEntry(DictionaryEntry other, double rank)
 	{
-		this.zh = other.zh;
+		this.chinese = other.chinese;
 		this.pinyin = other.pinyin;
 		this.pinyinNormalized = other.pinyinNormalized;
 		this.definition = other.definition;
@@ -36,9 +36,9 @@ public class RawDictionaryRow implements Comparable<RawDictionaryRow>
 		this.lastChar = other.lastChar;
 	}
 
-	public RawDictionaryRow(String zh, String pinyin, String pinyinNormalized, String definition, String firstChar, String lastChar, double rank) 
+	public DictionaryEntry(String chinese, String pinyin, String pinyinNormalized, String definition, String firstChar, String lastChar, double rank) 
 	{
-		this.zh = zh;
+		this.chinese = chinese;
 		this.pinyin = pinyin;
 		this.pinyinNormalized = pinyinNormalized;
 		this.definition = definition;
@@ -47,9 +47,9 @@ public class RawDictionaryRow implements Comparable<RawDictionaryRow>
 		this.rank = rank;
 	}
 	
-	public String getZh() 
+	public String getChinese() 
 	{
-		return zh;
+		return chinese;
 	}
 
 	public String getPinyin() 
@@ -85,7 +85,7 @@ public class RawDictionaryRow implements Comparable<RawDictionaryRow>
 	@Override
 	public String toString()
 	{
-		return "RawDictionaryRow [zh=" + zh + ", pinyin=" + pinyin + ", definition=" + definition + ", rank=" + rank + "]";
+		return "DictionaryEntry [zh=" + chinese + ", pinyin=" + pinyin + ", definition=" + definition + ", rank=" + rank + "]";
 	}
 
 	@Override
@@ -93,7 +93,7 @@ public class RawDictionaryRow implements Comparable<RawDictionaryRow>
 	{
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((zh == null) ? 0 : zh.hashCode());
+		result = prime * result + ((chinese == null) ? 0 : chinese.hashCode());
 		result = prime * result + ((pinyin == null) ? 0 : pinyin.hashCode());
 		return result;
 	}
@@ -107,13 +107,13 @@ public class RawDictionaryRow implements Comparable<RawDictionaryRow>
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		RawDictionaryRow other = (RawDictionaryRow) obj;
-		if (zh == null) 
+		DictionaryEntry other = (DictionaryEntry) obj;
+		if (chinese == null) 
 		{
-			if (other.zh != null)
+			if (other.chinese != null)
 				return false;
 		} 
-		else if (!zh.equals(other.zh))
+		else if (!chinese.equals(other.chinese))
 			return false;
 		
 		if (pinyin == null) 
@@ -127,7 +127,7 @@ public class RawDictionaryRow implements Comparable<RawDictionaryRow>
 	}
 
 	@Override
-	public int compareTo(RawDictionaryRow other)
+	public int compareTo(DictionaryEntry other)
 	{
 		final double difference = this.rank - other.rank;
 		return difference == 0 ? 0 : difference > 0 ? 1 : -1;

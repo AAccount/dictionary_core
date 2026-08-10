@@ -10,7 +10,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import dt.jdictionary.dbrepo.DbRepo;
-import dt.jdictionary.dbrepo.raw.RawDictionaryRow;
+import dt.jdictionary.dbrepo.DictionaryEntry;
 import dt.jdictionary.dbservice.DbService;
 import dt.util.ChineseText;
 
@@ -28,7 +28,7 @@ public class TypoSearch implements AlternateSearch
 	}
 
 	@Override
-	public List<RawDictionaryRow> trySearch() throws SQLException
+	public List<DictionaryEntry> trySearch() throws SQLException
 	{
 		final List<String> chars = ChineseText.charsByCodepoint(this.zh);
 		final List<List<String>> normalizedPinyins = findPinyinForZh(chars);
@@ -39,18 +39,18 @@ public class TypoSearch implements AlternateSearch
 		}
 
 		final List<String> permutations = pinyinPermutations(normalizedPinyins);
-		final List<RawDictionaryRow> candidates = this.db.findByNormalizedPinyin(permutations);
+		final List<DictionaryEntry> candidates = this.db.findByNormalizedPinyin(permutations);
 
 		return candidates.stream()
-				.map(candidate -> new RawDictionaryRow(candidate, pinyinLookupSimilarity(candidate, chars)))
+				.map(candidate -> new DictionaryEntry(candidate, pinyinLookupSimilarity(candidate, chars)))
 				.filter(candidate -> candidate.getRank() >0 && candidate.getRank() < this.zh.length())
 				.collect(Collectors.toCollection(ArrayList::new));
 	}
 
-	private int pinyinLookupSimilarity(RawDictionaryRow candidate, List<String> targetChars)
+	private int pinyinLookupSimilarity(DictionaryEntry candidate, List<String> targetChars)
 	{
 		int similarity = 0;
-		final List<String> chars = ChineseText.charsByCodepoint(candidate.getZh());
+		final List<String> chars = ChineseText.charsByCodepoint(candidate.getChinese());
 		final Set<String> candidateSet = new HashSet<>();
 		chars.stream().forEach(candidateChar -> candidateSet.add(candidateChar));
 		for(final String targetChar : targetChars)
@@ -66,14 +66,14 @@ public class TypoSearch implements AlternateSearch
 	private List<List<String>> findPinyinForZh(List<String> chars) throws SQLException
 	{
 		final HashMap<String, Set<String>> pinyinMap = new HashMap<>();
-		final List<RawDictionaryRow> dictionaryEntries = this.db.lookupChinese(chars);
-		for(final RawDictionaryRow entry : dictionaryEntries)
+		final List<DictionaryEntry> dictionaryEntries = this.db.lookupChinese(chars);
+		for(final DictionaryEntry entry : dictionaryEntries)
 		{
-			if(!pinyinMap.containsKey(entry.getZh()))
+			if(!pinyinMap.containsKey(entry.getChinese()))
 			{
-				pinyinMap.put(entry.getZh(), new HashSet<>());
+				pinyinMap.put(entry.getChinese(), new HashSet<>());
 			}
-			pinyinMap.get(entry.getZh()).add(ChineseText.normalizePinyin(entry.getPinyin()));
+			pinyinMap.get(entry.getChinese()).add(ChineseText.normalizePinyin(entry.getPinyin()));
 		}
 		
 		final List<List<String>> result = new ArrayList<>();

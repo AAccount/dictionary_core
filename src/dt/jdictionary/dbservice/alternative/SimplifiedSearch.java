@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import dt.jdictionary.dbrepo.DbRepo;
-import dt.jdictionary.dbrepo.raw.RawDictionaryRow;
+import dt.jdictionary.dbrepo.DictionaryEntry;
 import dt.util.ChineseText;
 
 public class SimplifiedSearch implements AlternateSearch
@@ -21,7 +21,7 @@ public class SimplifiedSearch implements AlternateSearch
 	}
 
 	@Override
-	public List<RawDictionaryRow> trySearch() throws SQLException 
+	public List<DictionaryEntry> trySearch() throws SQLException 
 	{
 		final List<String> characters = ChineseText.charsByCodepoint(chinese);
 		final Map<String, List<String>> reverseMapping = db.lookupReverseSimplified(characters);

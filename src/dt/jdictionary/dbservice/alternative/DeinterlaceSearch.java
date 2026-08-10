@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import dt.jdictionary.dbrepo.DbRepo;
-import dt.jdictionary.dbrepo.raw.RawDictionaryRow;
+import dt.jdictionary.dbrepo.DictionaryEntry;
 import dt.util.ChineseText;
 
 public class DeinterlaceSearch implements AlternateSearch
@@ -24,7 +24,7 @@ public class DeinterlaceSearch implements AlternateSearch
 	 * @throws SQLException 
 	 */
 	@Override
-	public List<RawDictionaryRow> trySearch() throws SQLException
+	public List<DictionaryEntry> trySearch() throws SQLException
 	{
 		final int MIN_DEINTERLACE = 3;
 		final int MAX_DEINTERLACE = 4;

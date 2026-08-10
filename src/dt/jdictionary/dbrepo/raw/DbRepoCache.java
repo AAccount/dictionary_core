@@ -5,13 +5,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import dt.jdictionary.dbrepo.DictionaryEntry;
+
 public class DbRepoCache 
 {
 	private final Map<Integer, String> simplifiedCache = new HashMap<>();
 	private final Map<String, List<String>> measureWordCache = new HashMap<>();
 	private final Map<String, List<String>> superStringCache = new HashMap<>();
 	private final Map<String, List<String>> reverseSimplified = new HashMap<>();
-	private final Map<String, Map<String, Map<String, List<RawDictionaryRow>>>> tableColumnEntryCache = new HashMap<>();
+	private final Map<String, Map<String, Map<String, List<DictionaryEntry>>>> tableColumnEntryCache = new HashMap<>();
 
 	private final static DbRepoCache instance = new DbRepoCache();
 
@@ -22,7 +24,7 @@ public class DbRepoCache
 
 	private DbRepoCache() {}
 
-	public synchronized void setResultsForTableColumn(String table, String column, String columnValue, RawDictionaryRow result)
+	public synchronized void setResultsForTableColumn(String table, String column, String columnValue, DictionaryEntry result)
 	{
 		if(!tableColumnEntryCache.containsKey(table))
 		{
@@ -41,7 +43,7 @@ public class DbRepoCache
 		tableColumnEntryCache.get(table).get(column).get(columnValue).add(result);
 	}
 
-	public synchronized List<RawDictionaryRow> getTableColumnCache(String table, String column, String columnValue)
+	public synchronized List<DictionaryEntry> getTableColumnCache(String table, String column, String columnValue)
 	{
 		if(!tableColumnEntryCache.containsKey(table))
 		{

@@ -18,7 +18,7 @@ import dt.jdictionary.ChineseDefinitionLookup;
 import dt.jdictionary.ExhaustiveChineseLookup;
 import dt.jdictionary.ProgressListener;
 import dt.jdictionary.dbrepo.DbRepo;
-import dt.jdictionary.dbrepo.raw.RawDictionaryRow;
+import dt.jdictionary.dbrepo.DictionaryEntry;
 import dt.jdictionary.dbservice.alternative.AlternateSearch;
 import dt.jdictionary.dbservice.alternative.DeinterlaceSearch;
 import dt.jdictionary.dbservice.alternative.SameBackSearch;
@@ -73,10 +73,10 @@ public class DbService
 			new TypoSearch(chinese, db),
 			new SimplifiedSearch(chinese, db)
 		);
-		final List<CompletableFuture<List<RawDictionaryRow>>> altFutures = new ArrayList<>();
+		final List<CompletableFuture<List<DictionaryEntry>>> altFutures = new ArrayList<>();
 		for(final AlternateSearch alt : alts)
 		{
-			final CompletableFuture<List<RawDictionaryRow>> altFuture = CompletableFuture
+			final CompletableFuture<List<DictionaryEntry>> altFuture = CompletableFuture
 				.supplyAsync(() -> {
 					try 
 					{
@@ -101,11 +101,11 @@ public class DbService
 			{
 				saveChineseSearchHits(directResults.join());
 			}
-			final Map<String, List<RawDictionaryRow>> altMap = new LinkedHashMap<>();
+			final Map<String, List<DictionaryEntry>> altMap = new LinkedHashMap<>();
 			for(int i=0; i<altFutures.size(); i++)
 			{
 				final AlternateSearch searchObj = alts.get(i);
-				final List<RawDictionaryRow> altResult = altFutures.get(i).join();
+				final List<DictionaryEntry> altResult = altFutures.get(i).join();
 				if(altResult.isEmpty())
 				{
 					continue;
@@ -122,16 +122,16 @@ public class DbService
 	
 	private ChineseDefinitionLookup lookupChineseDefinition(String zh) throws SQLException
 	{
-		final List<RawDictionaryRow> rawResults = db.lookupChinese(List.of(zh));
+		final List<DictionaryEntry> entries = db.lookupChinese(List.of(zh));
 		final Map<String, List<String>> resultsByPinyin = new HashMap<>();
-		for(final RawDictionaryRow rawResult : rawResults)
+		for(final DictionaryEntry entry : entries)
 		{
-			final String pinyin = rawResult.getPinyin();
+			final String pinyin = entry.getPinyin();
 			if(!resultsByPinyin.keySet().contains(pinyin))
 			{
 				resultsByPinyin.put(pinyin, new ArrayList<>());
 			}
-			resultsByPinyin.get(pinyin).add(rawResult.getDefinition());
+			resultsByPinyin.get(pinyin).add(entry.getDefinition());
 		}
 
 		final String simplified = db.lookupSimplified(zh);
@@ -157,16 +157,16 @@ public class DbService
 		}
 	}
 	
-	public Map<String, List<RawDictionaryRow>> lookupEnglish(String en)
+	public Map<String, List<DictionaryEntry>> lookupEnglish(String en)
 	{
 		logger.info("english start " + en);
 
-		final Map<String, CompletableFuture<List<RawDictionaryRow>>> wordFutures= new HashMap<>();
-		final List<CompletableFuture<List<RawDictionaryRow>>> futures = new ArrayList<>();
+		final Map<String, CompletableFuture<List<DictionaryEntry>>> wordFutures= new HashMap<>();
+		final List<CompletableFuture<List<DictionaryEntry>>> futures = new ArrayList<>();
 		final String[] individualWords = en.split(" ");
 		for(final String individualWord : individualWords)
 		{
-			final CompletableFuture<List<RawDictionaryRow>> wordFuture= CompletableFuture.supplyAsync(() -> {
+			final CompletableFuture<List<DictionaryEntry>> wordFuture= CompletableFuture.supplyAsync(() -> {
 				try 
 				{
 					return this.lookupSingleEnglishWord(individualWord);
@@ -183,10 +183,10 @@ public class DbService
 
 		final CompletableFuture<Void> allFinished = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 		allFinished.join();
-		final Map<String, List<RawDictionaryRow>> result= new HashMap<>();
+		final Map<String, List<DictionaryEntry>> result= new HashMap<>();
 		for(final String word : wordFutures.keySet())
 		{
-			final List<RawDictionaryRow> singleResult = wordFutures.get(word).join();
+			final List<DictionaryEntry> singleResult = wordFutures.get(word).join();
 			result.put(word, singleResult);
 		}
 		logger.info("english end " + en);
@@ -194,13 +194,13 @@ public class DbService
 		return findUseableCombinations(result);
 	}
 	
-	private Map<String, List<RawDictionaryRow>> findUseableCombinations(Map<String, List<RawDictionaryRow>> individualDefinitions)
+	private Map<String, List<DictionaryEntry>> findUseableCombinations(Map<String, List<DictionaryEntry>> individualDefinitions)
 	{
 		final List<List<String>> combinations = GenerateCombinations.generateCombinations(new ArrayList<>(individualDefinitions.keySet()));
-		final Map<String, List<RawDictionaryRow>> result = new HashMap<String, List<RawDictionaryRow>>();
+		final Map<String, List<DictionaryEntry>> result = new HashMap<String, List<DictionaryEntry>>();
 		for(final List<String> combination : combinations)
 		{
-			final List<RawDictionaryRow> combinedLookup = getQualifyingEntries(individualDefinitions, combination);
+			final List<DictionaryEntry> combinedLookup = getQualifyingEntries(individualDefinitions, combination);
 			if(!combinedLookup.isEmpty())
 			{
 				result.put(combination.toString(), combinedLookup);
@@ -209,31 +209,31 @@ public class DbService
 		return result;
 	}
 	
-	private List<RawDictionaryRow> getQualifyingEntries(Map<String, List<RawDictionaryRow>> individualDefinitions, List<String> combination)
+	private List<DictionaryEntry> getQualifyingEntries(Map<String, List<DictionaryEntry>> individualDefinitions, List<String> combination)
 	{
 		if(combination.size() == 1)
 		{
 			return individualDefinitions.get(combination.get(0));
 		}
 		
-		final List<RawDictionaryRow> result = new ArrayList<>(individualDefinitions.get(combination.get(0)));
+		final List<DictionaryEntry> result = new ArrayList<>(individualDefinitions.get(combination.get(0)));
 		for(final String word : combination.subList(1, combination.size()))
 		{
-			final List<RawDictionaryRow> wordEntries = individualDefinitions.get(word);
+			final List<DictionaryEntry> wordEntries = individualDefinitions.get(word);
 			result.retainAll(wordEntries);
 		}
 		return result;
 	}
 	
-	private List<RawDictionaryRow> lookupSingleEnglishWord(String singleWord) throws Exception
+	private List<DictionaryEntry> lookupSingleEnglishWord(String singleWord) throws Exception
 	{
-		final List<RawDictionaryRow> rawResults =  db.lookupEnglish(singleWord);
+		final List<DictionaryEntry> entries =  db.lookupEnglish(singleWord);
 		final List<String> candidates = new ArrayList<>();
-		for(final RawDictionaryRow summary : rawResults)
+		for(final DictionaryEntry entry : entries)
 		{
-			candidates.add(summary.getZh());
+			candidates.add(entry.getChinese());
 		}
-		return rawResults;
+		return entries;
 	}
 
 	public void saveCedictDump(CedictDump dump, ProgressListener listener) throws Exception
@@ -282,10 +282,10 @@ public class DbService
 	
 	public List<String> extractCompoundWords(List<String> manySentences) throws Exception
 	{
-		final List<CompletableFuture<List<RawDictionaryRow>>> futures = new ArrayList<>();
+		final List<CompletableFuture<List<DictionaryEntry>>> futures = new ArrayList<>();
 		for(final String sentence : manySentences)
 		{
-			final CompletableFuture<List<RawDictionaryRow>> future = CompletableFuture
+			final CompletableFuture<List<DictionaryEntry>> future = CompletableFuture
 				.supplyAsync(() -> {
 					try 
 					{
@@ -307,12 +307,12 @@ public class DbService
 		allFinished.join();		
 
 		final List<String> results = new ArrayList<>();
-		for(final CompletableFuture<List<RawDictionaryRow>> future : futures)
+		for(final CompletableFuture<List<DictionaryEntry>> future : futures)
 		{
-			final List<RawDictionaryRow> summaries = future.join();
-			for(final RawDictionaryRow summary : summaries)
+			final List<DictionaryEntry> summaries = future.join();
+			for(final DictionaryEntry summary : summaries)
 			{
-				results.add(summary.getZh());
+				results.add(summary.getChinese());
 			}
 		}
 		return results;

@@ -19,7 +19,6 @@ import java.util.logging.Logger;
 import dt.cedict.SimpleLookup;
 import dt.jdictionary.dbrepo.raw.Columns;
 import dt.jdictionary.dbrepo.raw.DbRepoCache;
-import dt.jdictionary.dbrepo.raw.RawDictionaryRow;
 import dt.jdictionary.dbrepo.raw.RawMeasureWordRow;
 import dt.jdictionary.dbrepo.raw.RawSimplifiedRow;
 import dt.jdictionary.dbrepo.raw.RawSubstringRow;
@@ -228,21 +227,21 @@ public class DbRepo
 
 	private List<String> filterWordsToKnown(List<String> words) throws SQLException
 	{
-		final List<RawDictionaryRow> rawDictionaryRows = lookupChinese(words);
+		final List<DictionaryEntry> entries = lookupChinese(words);
 		final List<String> results = new ArrayList<>();
-		for(final RawDictionaryRow row : rawDictionaryRows)
+		for(final DictionaryEntry entry : entries)
 		{
-			results.add(row.getZh());
+			results.add(entry.getChinese());
 		}
 		return results;
 	}
 	
-	public List<RawDictionaryRow> lookupChinese(List<String> zhStrings) throws SQLException
+	public List<DictionaryEntry> lookupChinese(List<String> zhStrings) throws SQLException
 	{
 		return lookupChineseByColumn(Tables.TABLE_ZHBASE + "." +Columns.COL_ZH, zhStrings);
 	}
 	
-	private List<RawDictionaryRow> lookupChineseByColumn(String column, List<String> zhStrings) throws SQLException
+	private List<DictionaryEntry> lookupChineseByColumn(String column, List<String> zhStrings) throws SQLException
 	{
 		if(zhStrings.isEmpty())
 		{
@@ -250,11 +249,11 @@ public class DbRepo
 			return List.of();
 		}
 		
-		final List<RawDictionaryRow> cached = new ArrayList<>();
+		final List<DictionaryEntry> cached = new ArrayList<>();
 		final List<String> noCache = new ArrayList<>();
 		for(final String zh : zhStrings)
 		{
-			final List<RawDictionaryRow> inCache = cache.getTableColumnCache(Tables.TABLE_ZHBASE, column, zh);
+			final List<DictionaryEntry> inCache = cache.getTableColumnCache(Tables.TABLE_ZHBASE, column, zh);
 			if(inCache.isEmpty())
 			{
 				noCache.add(zh);
@@ -276,7 +275,7 @@ public class DbRepo
 		final String where = column + " in (" + repeaterString + ")";
 		final String sql = RANKED_SQL(where);
 
-		final List<RawDictionaryRow> rawDbRows = new ArrayList<>();
+		final List<DictionaryEntry> entries = new ArrayList<>();
 		try(final PreparedStatement pst = db.prepareStatement(sql))
 		{
 			for (int i = 0; i < noCache.size(); i++)
@@ -286,37 +285,37 @@ public class DbRepo
 
 			try(final ResultSet results = pst.executeQuery())
 			{
-				rawDbRows.addAll(processRawDbRows(results));
+				entries.addAll(processRawDbRows(results));
 			}
 		}
 		
-		for(final RawDictionaryRow newRow : rawDbRows)
+		for(final DictionaryEntry newRow : entries)
 		{
-			cache.setResultsForTableColumn(Tables.TABLE_ZHBASE, column, newRow.getZh(), newRow);
+			cache.setResultsForTableColumn(Tables.TABLE_ZHBASE, column, newRow.getChinese(), newRow);
 		}
-		return rawDbRows;
+		return entries;
 	}
 
-	private List<RawDictionaryRow> lookupDictionaryTable(String sql, String target) throws SQLException
+	private List<DictionaryEntry> lookupDictionaryTable(String sql, String target) throws SQLException
 	{
-		final List<RawDictionaryRow> rawDbRows = new ArrayList<>();
+		final List<DictionaryEntry> entries = new ArrayList<>();
 		try(final PreparedStatement pst = db.prepareStatement(sql))
 		{
 			pst.setString(1, target);
 			try(final ResultSet results = pst.executeQuery())
 			{
-				rawDbRows.addAll(processRawDbRows(results));
+				entries.addAll(processRawDbRows(results));
 			}
 		}
-		return rawDbRows;
+		return entries;
 	}
 	
-	private List<RawDictionaryRow> processRawDbRows(ResultSet results) throws SQLException
+	private List<DictionaryEntry> processRawDbRows(ResultSet results) throws SQLException
 	{
-		final List<RawDictionaryRow> rawDbRows = new ArrayList<>();
+		final List<DictionaryEntry> entries = new ArrayList<>();
 		while(results.next())
 		{
-			final RawDictionaryRow row =  new RawDictionaryRow(
+			final DictionaryEntry row =  new DictionaryEntry(
 				results.getString(Columns.COL_ZH), 
 				results.getString(Columns.COL_PINYIN), 
 				results.getString(Columns.COL_PINYIN_NORM),
@@ -324,9 +323,9 @@ public class DbRepo
 				results.getString(Columns.COL_FIRST_CHAR), 
 				results.getString(Columns.COL_LAST_CHAR),
 				results.getDouble(Columns.COL_RANK));
-			rawDbRows.add(row);
+			entries.add(row);
 		}
-		return rawDbRows;
+		return entries;
 	}
 
 	public Map<String, List<String>> lookupReverseSimplified(List<String> characters) throws SQLException
@@ -495,10 +494,10 @@ public class DbRepo
 		return measureWords;
 	}
 
-	public List<RawDictionaryRow> lookupRelatedWord(String zh, RelatedChar similarity) throws SQLException
+	public List<DictionaryEntry> lookupRelatedWord(String zh, RelatedChar similarity) throws SQLException
 	{
 		final String column = similarity == RelatedChar.SAME_FRONT ? Columns.COL_FIRST_CHAR : Columns.COL_LAST_CHAR;
-		final List<RawDictionaryRow> cached = cache.getTableColumnCache(Tables.TABLE_ZHBASE, column, zh);
+		final List<DictionaryEntry> cached = cache.getTableColumnCache(Tables.TABLE_ZHBASE, column, zh);
 		if(!cached.isEmpty())
 		{
 			logger.info("related word for " + zh + " was cached");
@@ -507,17 +506,17 @@ public class DbRepo
 		logger.info("related word for " + zh + " not in the cache");
 
 		final String where = column + " = ?";
-		final List<RawDictionaryRow> result =  lookupDictionaryTable(RANKED_SQL(where), zh);
-		for(final RawDictionaryRow newRow : result)
+		final List<DictionaryEntry> result =  lookupDictionaryTable(RANKED_SQL(where), zh);
+		for(final DictionaryEntry newRow : result)
 		{
 			cache.setResultsForTableColumn(Tables.TABLE_ZHBASE, column, zh, newRow);
 		}
 		return result;
 	}
 
-	public List<RawDictionaryRow> lookupEnglish(String en) throws SQLException
+	public List<DictionaryEntry> lookupEnglish(String en) throws SQLException
 	{
-		final List<RawDictionaryRow> cached = cache.getTableColumnCache(Tables.TABLE_ENGLISH, Columns.COL_DEF, en);
+		final List<DictionaryEntry> cached = cache.getTableColumnCache(Tables.TABLE_ENGLISH, Columns.COL_DEF, en);
 		if(!cached.isEmpty())
 		{
 			logger.info("english search for " + en + " was cached");
@@ -545,15 +544,15 @@ public class DbRepo
 			Columns.COL_ID,
 			Columns.COL_RANK,
 			MAXIMUM_RESULTS);
-		final List<RawDictionaryRow> results = lookupDictionaryTable(sql, en);
-		for(final RawDictionaryRow result : results)
+		final List<DictionaryEntry> results = lookupDictionaryTable(sql, en);
+		for(final DictionaryEntry result : results)
 		{
 			cache.setResultsForTableColumn(Tables.TABLE_ENGLISH, Columns.COL_DEF, en, result);
 		}
 		return results;
 	}
 	
-	public List<RawDictionaryRow> findByNormalizedPinyin(List<String> normalizedPinyins) throws SQLException
+	public List<DictionaryEntry> findByNormalizedPinyin(List<String> normalizedPinyins) throws SQLException
 	{
 		return lookupChineseByColumn(Columns.COL_PINYIN_NORM, normalizedPinyins);
 	}
@@ -601,8 +600,8 @@ public class DbRepo
 
 			for (final SimpleLookup entry : allEntries)
 			{
-				final RawDictionaryRow zhBase = new RawDictionaryRow(entry.getZh(), entry.getPinyin(), entry.getRank());
-				pstZhBase.setString(1, zhBase.getZh());
+				final DictionaryEntry zhBase = new DictionaryEntry(entry.getZh(), entry.getPinyin(), entry.getRank());
+				pstZhBase.setString(1, zhBase.getChinese());
 				pstZhBase.setString(2, zhBase.getPinyin());
 				pstZhBase.setString(3, zhBase.getPinyinNormalized());
 				pstZhBase.setString(4, zhBase.getFirstChar());
