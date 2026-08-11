@@ -20,3 +20,6 @@ When given a string of Chinese characters, it is automatically assumed to be tra
 
 ## English to Chinese
 English to Chinese is very primitive and not used much. It given a string of English "word1 word2 word3", it does a leetcode style enumeration of every possible combination "word1", "word2", "word3", "word1 word2" etc, and sees if any full text search 5 (fts5) entries of the definitions match.
+
+## SQL Magic
+Profiling this backend showed a lot of effort being spent processing result sets, extracting strings, etc from the normalized database. Some alternate searches can return 800+ results which is a waste of effort. To limit the search results to 200, sql magic had to be done to group all the definitions of a word together. SQL magic is also used to fudge the rank of a dictionary entry if that entry has a past hit (you've looked up this word before). The logic is: if you've looked up a word in the past, that word is probably more relevant to you. Use the timestamp of the last lookup as the rank. This produces a huge number that easily blows past any precalculated rank.
