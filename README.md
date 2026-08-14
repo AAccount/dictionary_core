@@ -8,7 +8,9 @@ This lookup strategy is designed for someone who only has an English background.
 
 Just like the English compound word cannot = can + not, I use the same concept in Chinese as "雖然" = 雖 + 然.
 
-When given a string of Chinese characters, it is automatically assumed to be traditional Chinese, It then attempts the following lookups:
+When given a string of Chinese characters, it is **automatically assumed to be traditional Chinese**. If you input a simplified Chinese string, you will need to use the `Was Simplified` tab to retrieve the traditional and use that for further searching.
+
+It then attempts the following lookups:
 - try to find a dictionary entry for the entire string.
 - find compound words or sayings that start with the same first character. If given **沒** or **沒**有 it will return **沒**事, for example, and give the definition of 沒事.
 - find compound words or sayings the end with the same last character. If given 當**然** or just **然**, it will return 雖**然**, for example and give the definition of 雖然.
