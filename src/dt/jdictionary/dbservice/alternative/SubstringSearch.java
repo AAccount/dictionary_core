@@ -30,8 +30,8 @@ public class SubstringSearch implements AlternateSearch
 	public List<DictionaryEntry> trySearch() throws SQLException
 	{
 		final List<String> allSubstrings = GenerateSubstrings.generateSubstrings(this.chinese);
-		return this.db.lookupChinese(allSubstrings)
-				.stream().map(simpleLookup -> new DictionaryEntry(simpleLookup, this.rankBasedOnOriginalFrontToBack(simpleLookup.getChinese())))
+		final List<DictionaryEntry> results =  this.db.lookupChinese(allSubstrings);
+		return results.stream().map(simpleLookup -> new DictionaryEntry(simpleLookup, this.rankBasedOnOriginalFrontToBack(simpleLookup.getChinese())))
 				.collect(Collectors.toCollection(ArrayList::new));
 	}
 
