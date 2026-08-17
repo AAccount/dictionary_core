@@ -1,0 +1,18 @@
+name: Trigger Dictionary Build
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  ping-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Repository Dispatch Event
+        run: |
+          curl -H "Authorization: token ${{ secrets.TRIGGER_DICTIONARY_DEP }}" \
+               -H "Accept: application/vnd.github.v3+json" \
+               -X POST \
+               -d '{"event_type": "dependency_updated"}' \
+               https://github.com
