@@ -275,7 +275,7 @@ public class DbRepo
 			return List.of();
 		}
 		
-		final List<DictionaryEntry> entries = new ArrayList<>();
+		final List<DictionaryEntry> cachedEntries = new ArrayList<>();
 		final List<String> noCache = new ArrayList<>();
 		for(final String str : strings)
 		{
@@ -286,15 +286,15 @@ public class DbRepo
 			}
 			else
 			{
-				entries.addAll(inCache);
+				cachedEntries.addAll(inCache);
 			}
 		}
 		final String logPrefix = "lookup chinese by column (" + column + ") strings " + strings + " ";
-		logger.info(logPrefix +"cached entries " + entries.size() + " uncached entries " + noCache.size());
+		logger.info(logPrefix +"cached entries " + cachedEntries.size() + " uncached entries " + noCache.size());
 		if(noCache.isEmpty())
 		{
 			logger.info(logPrefix + "all entries for string are cached");
-			return entries;
+			return cachedEntries;
 		}
 
 		final String repeaterRawString = "?, ".repeat(noCache.size());
@@ -302,6 +302,7 @@ public class DbRepo
 		final String where = column + " in (" + repeaterString + ")";
 		final String sql = RANKED_SQL(where);
 
+		final List<DictionaryEntry> entries = new ArrayList<>();
 		try(final PreparedStatement pst = db.prepareStatement(sql))
 		{
 			for (int i = 0; i < noCache.size(); i++)
@@ -319,6 +320,7 @@ public class DbRepo
 		{
 			cache.setResultsForTableColumn(Tables.TABLE_CHINESE_BASE, column, newRow.getChinese(), newRow);
 		}
+		entries.addAll(cachedEntries);
 		return entries;
 	}
 

@@ -4,11 +4,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import dt.jdictionary.dbrepo.DictionaryEntry;
 
 public class DbRepoCache 
 {
+	private static final Logger logger = Logger.getLogger(DbRepoCache.class.getName());
+
 	private final Map<Integer, String> simplifiedCache = new HashMap<>();
 	private final Map<String, List<String>> measureWordCache = new HashMap<>();
 	private final Map<String, List<String>> superStringCache = new HashMap<>();
@@ -24,6 +27,11 @@ public class DbRepoCache
 
 	private DbRepoCache() {}
 
+	// This cache table should be "write once only". The dictionary entries are fixed.
+	// Without the write once only check the synchronized is useless.
+	// It allows multiple concurrent alternate search strategies to write duplicates upon duplicates into the cache.
+	// This sequence seems to trigger this most noticeably: 瞎練, 有幾條名, 有幾條命, 曾經
+	// (This is from Shadows House. The 3rd lookup is a "typo correction" for the 2nd one.)
 	public synchronized void setResultsForTableColumn(String table, String column, String columnValue, DictionaryEntry result)
 	{
 		if(!tableColumnEntryCache.containsKey(table))
@@ -39,8 +47,12 @@ public class DbRepoCache
 		if(!tableColumnEntryCache.get(table).get(column).containsKey(columnValue))
 		{
 			tableColumnEntryCache.get(table).get(column).put(columnValue, new ArrayList<>());
+			tableColumnEntryCache.get(table).get(column).get(columnValue).add(result);
 		}
-		tableColumnEntryCache.get(table).get(column).get(columnValue).add(result);
+		else
+		{
+			logger.info("table " + table + " column " + column + " column value " + columnValue + " cache entry already exists");
+		}
 	}
 
 	public synchronized List<DictionaryEntry> getTableColumnCache(String table, String column, String columnValue)
