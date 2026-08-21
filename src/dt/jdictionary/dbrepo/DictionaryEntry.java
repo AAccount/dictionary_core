@@ -17,7 +17,7 @@ public class DictionaryEntry implements Comparable<DictionaryEntry>
 		this.chinese = chinese;
 		this.pinyin = pinyin;
 		this.pinyinNormalized = ChineseText.normalizePinyin(pinyin);
-		this.definition = null;
+		this.definition = "";
 		this.rank = rank;
 
 		final int[] codepoints = chinese.codePoints().toArray();

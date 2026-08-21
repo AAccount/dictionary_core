@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import dt.jdictionary.dbrepo.DbRepo;
 import dt.jdictionary.dbrepo.DictionaryEntry;
@@ -26,7 +27,20 @@ public class SimplifiedSearch implements AlternateSearch
 		final List<String> characters = ChineseText.charsByCodepoint(chinese);
 		final Map<String, List<String>> reverseMapping = db.lookupReverseSimplified(characters);
 		final List<String> allCombinations = explodeCombinations(characters, reverseMapping);
-		return db.lookupChinese(allCombinations);
+		
+		// Include the raw conversion of simplified to its possible traditionals in case it is useful.
+		final List<DictionaryEntry> results = allCombinations
+			.stream()
+			.map(reversed -> new DictionaryEntry(reversed, "", 10000))
+			.collect(Collectors.toCollection(ArrayList::new));
+		final List<DictionaryEntry> dbMatches =  db.lookupChinese(allCombinations);
+		results.addAll(dbMatches);
+		
+		if(results.size() == 1 && results.get(0).getChinese().equals(this.chinese))
+		{
+			return List.of(); // The only entry is the original search query that was already traditional.
+		}
+		return results;
 	}
 
 	private List<String> explodeCombinations(List<String> characters, Map<String, List<String>> reverseMapping)
